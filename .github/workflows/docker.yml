@@ -19,7 +19,7 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: |
-          hsanaeii/3x1-ui
+          AlirezaSadeghi72/3x1-ui
           ghcr.io/AlirezaSadeghi72/3x1-ui
         tags: |
           type=ref,event=branch

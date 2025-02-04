@@ -489,7 +489,7 @@ WARP встроен, и дополнительная установка не т�
 
 #### Использование
 
-- [API документация](https://www.postman.com/hsanaei/3x1-ui/collection/q1l5l0u/3x1-ui)
+- [API документация](https://www.postman.com/hsanaei/3x-ui/collection/q1l5l0u/3x-ui)
 - `/login` с `POST`-данными: `{username: '', password: ''}` для входа
 - `/panel/api/inbounds` это базовый путь для следующих действий:
 

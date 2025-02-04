@@ -486,7 +486,7 @@ Ingresa el ID de chat de usuario en el campo de entrada número 4. Las cuentas d
 
 #### Uso
 
-- [Documentación de API](https://www.postman.com/hsanaei/3x1-ui/collection/q1l5l0u/3x1-ui)
+- [Documentación de API](https://www.postman.com/hsanaei/3x-ui/collection/q1l5l0u/3x-ui)
 - `/login` con `POST` datos de usuario: `{username: '', password: ''}` para iniciar sesión
 - `/panel/api/inbounds` base para las siguientes acciones:
 

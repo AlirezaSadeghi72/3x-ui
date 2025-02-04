@@ -109,8 +109,8 @@ fi
 
 # Declare Variables
 log_folder="${XUI_LOG_FOLDER:=/var/log}"
-iplimit_log_path="${log_folder}/3xipl.log"
-iplimit_banned_log_path="${log_folder}/3xipl-banned.log"
+iplimit_log_path="${log_folder}/3x1ipl.log"
+iplimit_banned_log_path="${log_folder}/3x1ipl-banned.log"
 
 confirm() {
     if [[ $# > 1 ]]; then
@@ -468,12 +468,12 @@ show_banlog() {
 
     if [[ -f "$system_log" ]]; then
         echo -e "${green}Recent system ban activities from fail2ban.log:${plain}"
-        grep "3x-ipl" "$system_log" | grep -E "Ban|Unban" | tail -n 10 || echo -e "${yellow}No recent system ban activities found${plain}"
+        grep "3x1-ipl" "$system_log" | grep -E "Ban|Unban" | tail -n 10 || echo -e "${yellow}No recent system ban activities found${plain}"
         echo ""
     fi
 
     if [[ -f "${iplimit_banned_log_path}" ]]; then
-        echo -e "${green}3X-IPL ban log entries:${plain}"
+        echo -e "${green}3x1-ipl ban log entries:${plain}"
         if [[ -s "${iplimit_banned_log_path}" ]]; then
             grep -v "INIT" "${iplimit_banned_log_path}" | tail -n 10 || echo -e "${yellow}No ban entries found${plain}"
         else
@@ -484,7 +484,7 @@ show_banlog() {
     fi
 
     echo -e "\n${green}Current jail status:${plain}"
-    fail2ban-client status 3x-ipl || echo -e "${yellow}Unable to get jail status${plain}"
+    fail2ban-client status 3x1-ipl || echo -e "${yellow}Unable to get jail status${plain}"
 }
 
 bbr_menu() {
@@ -1312,26 +1312,26 @@ create_iplimit_jails() {
         sed -i '0,/action =/s/backend = auto/backend = systemd/' /etc/fail2ban/jail.conf
     fi
 
-    cat << EOF > /etc/fail2ban/jail.d/3x-ipl.conf
-[3x-ipl]
+    cat << EOF > /etc/fail2ban/jail.d/3x1-ipl.conf
+[3x1-ipl]
 enabled=true
 backend=auto
-filter=3x-ipl
-action=3x-ipl
+filter=3x1-ipl
+action=3x1-ipl
 logpath=${iplimit_log_path}
 maxretry=2
 findtime=32
 bantime=${bantime}m
 EOF
 
-    cat << EOF > /etc/fail2ban/filter.d/3x-ipl.conf
+    cat << EOF > /etc/fail2ban/filter.d/3x1-ipl.conf
 [Definition]
 datepattern = ^%%Y/%%m/%%d %%H:%%M:%%S
 failregex   = \[LIMIT_IP\]\s*Email\s*=\s*<F-USER>.+</F-USER>\s*\|\|\s*SRC\s*=\s*<ADDR>
 ignoreregex =
 EOF
 
-    cat << EOF > /etc/fail2ban/action.d/3x-ipl.conf
+    cat << EOF > /etc/fail2ban/action.d/3x1-ipl.conf
 [INCLUDES]
 before = iptables-allports.conf
 
@@ -1368,10 +1368,10 @@ iplimit_remove_conflicts() {
     )
 
     for file in "${jail_files[@]}"; do
-        # Check for [3x-ipl] config in jail file then remove it
-        if test -f "${file}" && grep -qw '3x-ipl' ${file}; then
-            sed -i "/\[3x-ipl\]/,/^$/d" ${file}
-            echo -e "${yellow}Removing conflicts of [3x-ipl] in jail (${file})!${plain}\n"
+        # Check for [3x1-ipl] config in jail file then remove it
+        if test -f "${file}" && grep -qw '3x1-ipl' ${file}; then
+            sed -i "/\[3x1-ipl\]/,/^$/d" ${file}
+            echo -e "${yellow}Removing conflicts of [3x1-ipl] in jail (${file})!${plain}\n"
         fi
     done
 }
@@ -1419,7 +1419,7 @@ iplimit_main() {
     3)
         confirm "Proceed with Unbanning everyone from IP Limit jail?" "y"
         if [[ $? == 0 ]]; then
-            fail2ban-client reload --restart --unban 3x-ipl
+            fail2ban-client reload --restart --unban 3x1-ipl
             truncate -s 0 "${iplimit_banned_log_path}"
             echo -e "${green}All users Unbanned successfully.${plain}"
             iplimit_main
@@ -1436,7 +1436,7 @@ iplimit_main() {
         read -rp "Enter the IP address you want to ban: " ban_ip
         ip_validation
         if [[ $ban_ip =~ $ipv4_regex || $ban_ip =~ $ipv6_regex ]]; then
-            fail2ban-client set 3x-ipl banip "$ban_ip"
+            fail2ban-client set 3x1-ipl banip "$ban_ip"
             echo -e "${green}IP Address ${ban_ip} has been banned successfully.${plain}"
         else
             echo -e "${red}Invalid IP address format! Please try again.${plain}"
@@ -1447,7 +1447,7 @@ iplimit_main() {
         read -rp "Enter the IP address you want to unban: " unban_ip
         ip_validation
         if [[ $unban_ip =~ $ipv4_regex || $unban_ip =~ $ipv6_regex ]]; then
-            fail2ban-client set 3x-ipl unbanip "$unban_ip"
+            fail2ban-client set 3x1-ipl unbanip "$unban_ip"
             echo -e "${green}IP Address ${unban_ip} has been unbanned successfully.${plain}"
         else
             echo -e "${red}Invalid IP address format! Please try again.${plain}"
@@ -1558,9 +1558,9 @@ remove_iplimit() {
     read -p "Choose an option: " num
     case "$num" in
     1)
-        rm -f /etc/fail2ban/filter.d/3x-ipl.conf
-        rm -f /etc/fail2ban/action.d/3x-ipl.conf
-        rm -f /etc/fail2ban/jail.d/3x-ipl.conf
+        rm -f /etc/fail2ban/filter.d/3x1-ipl.conf
+        rm -f /etc/fail2ban/action.d/3x1-ipl.conf
+        rm -f /etc/fail2ban/jail.d/3x1-ipl.conf
         systemctl restart fail2ban
         echo -e "${green}IP Limit removed successfully!${plain}\n"
         before_show_menu

@@ -486,7 +486,7 @@ Web 面板通过 Telegram Bot 支持每日流量、面板登录、数据库备�
 
 #### 使用
 
-- [API 文档](https://www.postman.com/hsanaei/3x1-ui/collection/q1l5l0u/3x1-ui)
+- [API 文档](https://www.postman.com/hsanaei/3x-ui/collection/q1l5l0u/3x-ui)
 - `/login` 使用 `POST` 用户名称 & 密码： `{username: '', password: ''}` 登录
 - `/panel/api/inbounds` 以下操作的基础：
 

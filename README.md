@@ -494,7 +494,7 @@ Enter the user ID in input field number 4. The Telegram accounts with this id wi
 
 #### Usage
 
-- [API Documentation](https://www.postman.com/hsanaei/3x1-ui/collection/q1l5l0u/3x1-ui)
+- [API Documentation](https://www.postman.com/hsanaei/3x-ui/collection/q1l5l0u/3x-ui)
 - `/login` with `POST` user data: `{username: '', password: ''}` for login
 - `/panel/api/inbounds` base for following actions:
 
