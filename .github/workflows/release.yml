@@ -1,4 +1,4 @@
-name: Release 3X-UI
+name: Release 3x1-ui
 
 on:
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
             sudo apt install gcc-s390x-linux-gnu
           fi
 
-      - name: Build x-ui
+      - name: Build x1-ui
         run: |
           export CGO_ENABLED=1
           export GOOS=linux
@@ -74,16 +74,16 @@ jobs:
           fi
           go build -o xui-release -v main.go
           
-          mkdir x-ui
-          cp xui-release x-ui/
-          cp x-ui.service x-ui/
-          cp x-ui.sh x-ui/
-          mv x-ui/xui-release x-ui/x-ui
-          mkdir x-ui/bin
-          cd x-ui/bin
+          mkdir x1-ui
+          cp xui-release x1-ui/
+          cp x1-ui.service x1-ui/
+          cp x1-ui.sh x1-ui/
+          mv x1-ui/xui-release x1-ui/x1-ui
+          mkdir x1-ui/bin
+          cd x1-ui/bin
           
           # Download dependencies
-          Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v24.12.18/"
+          Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v1.8.24/"
           if [ "${{ matrix.platform }}" == "amd64" ]; then
             wget ${Xray_URL}Xray-linux-64.zip
             unzip Xray-linux-64.zip
@@ -124,19 +124,19 @@ jobs:
           cd ../..
           
       - name: Package
-        run: tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+        run: tar -zcvf x1-ui-linux-${{ matrix.platform }}.tar.gz x1-ui
 
       - name: Upload files to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: x-ui-linux-${{ matrix.platform }}
-          path: ./x-ui-linux-${{ matrix.platform }}.tar.gz
+          name: x1-ui-linux-${{ matrix.platform }}
+          path: ./x1-ui-linux-${{ matrix.platform }}.tar.gz
 
       - name: Upload files to GH release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: x-ui-linux-${{ matrix.platform }}.tar.gz
-          asset_name: x-ui-linux-${{ matrix.platform }}.tar.gz
+          file: x1-ui-linux-${{ matrix.platform }}.tar.gz
+          asset_name: x1-ui-linux-${{ matrix.platform }}.tar.gz
           prerelease: true

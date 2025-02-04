@@ -22,7 +22,7 @@ func init() {
 }
 
 func InitLogger(level logging.Level) {
-	newLogger := logging.MustGetLogger("x-ui")
+	newLogger := logging.MustGetLogger("x1-ui")
 	var err error
 	var backend logging.Backend
 	var format logging.Formatter
@@ -41,7 +41,7 @@ func InitLogger(level logging.Level) {
 
 	backendFormatter := logging.NewBackendFormatter(backend, format)
 	backendLeveled := logging.AddModuleLevel(backendFormatter)
-	backendLeveled.SetLevel(level, "x-ui")
+	backendLeveled.SetLevel(level, "x1-ui")
 	newLogger.SetBackend(backendLeveled)
 
 	logger = newLogger

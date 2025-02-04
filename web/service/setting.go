@@ -10,14 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"x-ui/database"
-	"x-ui/database/model"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/util/random"
-	"x-ui/util/reflect_util"
-	"x-ui/web/entity"
-	"x-ui/xray"
+	"x1-ui/database"
+	"x1-ui/database/model"
+	"x1-ui/logger"
+	"x1-ui/util/common"
+	"x1-ui/util/random"
+	"x1-ui/util/reflect_util"
+	"x1-ui/web/entity"
+	"x1-ui/xray"
 )
 
 //go:embed config.json

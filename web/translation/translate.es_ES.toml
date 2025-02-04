@@ -445,7 +445,7 @@
 "loginSecurity" = "Seguridad de Inicio de Sesión"
 "loginSecurityDesc" = "Habilitar un paso adicional de seguridad para el inicio de sesión de usuarios."
 "secretToken" = "Token Secreto"
-"secretTokenDesc" = "Por favor, copia y guarda este token de forma segura en un lugar seguro. Este token es necesario para iniciar sesión y no se puede recuperar con la herramienta de comando x-ui."
+"secretTokenDesc" = "Por favor, copia y guarda este token de forma segura en un lugar seguro. Este token es necesario para iniciar sesión y no se puede recuperar con la herramienta de comando x1-ui."
 
 [pages.settings.toasts]
 "modifySettings" = "Modificar Configuraciones "
@@ -499,7 +499,7 @@
 "report" = "🕰 Informes programados: {{ .RunTime }}\r\n"
 "datetime" = "⏰ Fecha y Hora: {{ .DateTime }}\r\n"
 "hostname" = "💻 Nombre del Host: {{ .Hostname }}\r\n"
-"version" = "🚀 Versión de X-UI: {{ .Version }}\r\n"
+"version" = "🚀 Versión de x1-ui: {{ .Version }}\r\n"
 "xrayVersion" = "📡 Versión de Xray: {{ .XrayVersion }}\r\n"
 "ipv6" = "🌐 IPv6: {{ .IPv6 }}\r\n"
 "ipv4" = "🌐 IPv4: {{ .IPv4 }}\r\n"

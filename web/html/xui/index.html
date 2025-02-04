@@ -91,8 +91,8 @@
             <a-row>
               <a-col :sm="24" :lg="12">
                 <a-card hoverable>
-                  <b>3X-UI:</b>
-                  <a rel="noopener" href="https://github.com/MHSanaei/3x-ui/releases" target="_blank"><a-tag color="green">v{{ .cur_ver }}</a-tag></a>
+                  <b>3x1-ui:</b>
+                  <a rel="noopener" href="https://github.com/AlirezaSadeghi72/3x1-ui/releases" target="_blank"><a-tag color="green">v{{ .cur_ver }}</a-tag></a>
                   <a rel="noopener" href="https://t.me/XrayUI" target="_blank"><a-tag color="green">@XrayUI</a-tag></a>
                 </a-card>
               </a-col>
@@ -308,7 +308,7 @@
         </a-form-item>
         <a-form-item style="float: right;">
           <a-button type="primary" icon="download"
-            :href="'data:application/text;charset=utf-8,' + encodeURIComponent(logModal.logs?.join('\n'))" download="x-ui.log">
+            :href="'data:application/text;charset=utf-8,' + encodeURIComponent(logModal.logs?.join('\n'))" download="x1-ui.log">
           </a-button>
         </a-form-item>
       </a-form>
@@ -477,7 +477,7 @@
                     if(message.startsWith("XRAY:"))
                         message = "<b>XRAY: </b>" + message.substring(5);
                     else
-                        message = "<b>X-UI: </b>" + message;
+                        message = "<b>x1-ui: </b>" + message;
                 }
 
                 formattedLogs += message ? ' - ' + message : '';

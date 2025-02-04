@@ -5,9 +5,9 @@ import (
 	"text/template"
 	"time"
 
-	"x-ui/logger"
-	"x-ui/web/service"
-	"x-ui/web/session"
+	"x1-ui/logger"
+	"x1-ui/web/service"
+	"x1-ui/web/session"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

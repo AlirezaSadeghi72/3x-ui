@@ -11,10 +11,10 @@ import (
 	"sort"
 	"time"
 
-	"x-ui/database"
-	"x-ui/database/model"
-	"x-ui/logger"
-	"x-ui/xray"
+	"x1-ui/database"
+	"x1-ui/database/model"
+	"x1-ui/logger"
+	"x1-ui/xray"
 )
 
 type CheckClientIpJob struct {
@@ -44,7 +44,7 @@ func (j *CheckClientIpJob) Run() {
 			shouldClearAccessLog = j.processLogFile()
 		} else {
 			if !f2bInstalled {
-				logger.Warning("[LimitIP] Fail2Ban is not installed, Please install Fail2Ban from the x-ui bash menu.")
+				logger.Warning("[LimitIP] Fail2Ban is not installed, Please install Fail2Ban from the x1-ui bash menu.")
 			}
 		}
 	}

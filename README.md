@@ -2,17 +2,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./media/3x-ui-dark.png">
-    <img alt="3x-ui" src="./media/3x-ui-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="./media/3x1-ui-dark.png">
+    <img alt="3x1-ui" src="./media/3x1-ui-light.png">
   </picture>
 </p>
 
 **An Advanced Web Panel • Built on Xray Core**
 
-[![](https://img.shields.io/github/v/release/mhsanaei/3x-ui.svg)](https://github.com/MHSanaei/3x-ui/releases)
-[![](https://img.shields.io/github/actions/workflow/status/mhsanaei/3x-ui/release.yml.svg)](#)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/mhsanaei/3x-ui.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/mhsanaei/3x-ui/total.svg)](#)
+[![](https://img.shields.io/github/v/release/AlirezaSadeghi72/3x1-ui.svg)](https://github.com/AlirezaSadeghi72/3x1-ui/releases)
+[![](https://img.shields.io/github/actions/workflow/status/AlirezaSadeghi72/3x1-ui/release.yml.svg)](#)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/AlirezaSadeghi72/3x1-ui.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/AlirezaSadeghi72/3x1-ui/total.svg)](#)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 > **Disclaimer:** This project is only for personal learning and communication, please do not use it for illegal purposes, please do not use it in a production environment
@@ -32,7 +32,7 @@
 ## Install & Upgrade
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/AlirezaSadeghi72/3x1-ui/master/install.sh)
 ```
 
 ## Install legacy Version (we don't recommend)
@@ -40,7 +40,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.
 To install your desired version, use following installation command. e.g., ver `v1.7.9`:
 
 ```
-VERSION=v1.7.9 && bash <(curl -Ls "https://raw.githubusercontent.com/mhsanaei/3x-ui/$VERSION/install.sh") $VERSION
+VERSION=v1.7.9 && bash <(curl -Ls "https://raw.githubusercontent.com/AlirezaSadeghi72/3x1-ui/$VERSION/install.sh") $VERSION
 ```
 
 ## SSL Certificate
@@ -53,7 +53,7 @@ VERSION=v1.7.9 && bash <(curl -Ls "https://raw.githubusercontent.com/mhsanaei/3x
 To manage SSL certificates using ACME:
 
 1. Ensure your domain is correctly resolved to the server.
-2. Run the `x-ui` command in the terminal, then choose `SSL Certificate Management`.
+2. Run the `x1-ui` command in the terminal, then choose `SSL Certificate Management`.
 3. You will be presented with the following options:
 
    - **Get SSL:** Obtain SSL certificates.
@@ -82,7 +82,7 @@ The management script includes a built-in SSL certificate application for Cloudf
 
 **How to get the Cloudflare Global API Key:**
 
-1. Run the `x-ui` command in the terminal, then choose `Cloudflare SSL Certificate`.
+1. Run the `x1-ui` command in the terminal, then choose `Cloudflare SSL Certificate`.
 2. Visit the link: [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens).
 3. Click on "View Global API Key" (see the screenshot below):
    ![](media/APIKey1.PNG)
@@ -118,10 +118,10 @@ case "${ARCH}" in
 esac
 
 
-wget https://github.com/MHSanaei/3x-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
+wget https://github.com/AlirezaSadeghi72/3x1-ui/releases/latest/download/x1-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
-2. Once the compressed package is downloaded, execute the following commands to install or upgrade x-ui:
+2. Once the compressed package is downloaded, execute the following commands to install or upgrade x1-ui:
 
 ```sh
 ARCH=$(uname -m)
@@ -137,15 +137,15 @@ case "${ARCH}" in
 esac
 
 cd /root/
-rm -rf x-ui/ /usr/local/x-ui/ /usr/bin/x-ui
-tar zxvf x-ui-linux-${XUI_ARCH}.tar.gz
-chmod +x x-ui/x-ui x-ui/bin/xray-linux-* x-ui/x-ui.sh
-cp x-ui/x-ui.sh /usr/bin/x-ui
-cp -f x-ui/x-ui.service /etc/systemd/system/
-mv x-ui/ /usr/local/
+rm -rf x1-ui/ /usr/local/x1-ui/ /usr/bin/x1-ui
+tar zxvf x1-ui-linux-${XUI_ARCH}.tar.gz
+chmod +x x1-ui/x1-ui x1-ui/bin/xray-linux-* x1-ui/x1-ui.sh
+cp x1-ui/x1-ui.sh /usr/bin/x1-ui
+cp -f x1-ui/x1-ui.service /etc/systemd/system/
+mv x1-ui/ /usr/local/
 systemctl daemon-reload
-systemctl enable x-ui
-systemctl restart x-ui
+systemctl enable x1-ui
+systemctl restart x1-ui
 ```
 
 </details>
@@ -166,8 +166,8 @@ systemctl restart x-ui
 2. **Clone the Project Repository:**
 
    ```sh
-   git clone https://github.com/MHSanaei/3x-ui.git
-   cd 3x-ui
+   git clone https://github.com/AlirezaSadeghi72/3x1-ui.git
+   cd 3x1-ui
    ```
 
 3. **Start the Service:**
@@ -183,30 +183,30 @@ systemctl restart x-ui
    ```sh
    docker run -itd \
       -e XRAY_VMESS_AEAD_FORCED=false \
-      -v $PWD/db/:/etc/x-ui/ \
+      -v $PWD/db/:/etc/x1-ui/ \
       -v $PWD/cert/:/root/cert/ \
       --network=host \
       --restart=unless-stopped \
-      --name 3x-ui \
-      ghcr.io/mhsanaei/3x-ui:latest
+      --name 3x1-ui \
+      ghcr.io/AlirezaSadeghi72/3x1-ui:latest
    ```
 
 4. **Update to the Latest Version:**
 
    ```sh
-   cd 3x-ui
+   cd 3x1-ui
    docker compose down
-   docker compose pull 3x-ui
+   docker compose pull 3x1-ui
    docker compose up -d
    ```
 
-5. **Remove 3x-ui from Docker:**
+5. **Remove 3x1-ui from Docker:**
 
    ```sh
-   docker stop 3x-ui
-   docker rm 3x-ui
+   docker stop 3x1-ui
+   docker rm 3x1-ui
    cd --
-   rm -r 3x-ui
+   rm -r 3x1-ui
    ```
 
 </details>
@@ -340,21 +340,21 @@ If you choose not to modify these settings, they will be generated randomly (thi
   You can conveniently perform database Backups and Restores directly from the panel.
 
 - **Database Path:**
-  - `/etc/x-ui/x-ui.db`
+  - `/etc/x1-ui/x1-ui.db`
 
 
 ### Web Base Path
 
 1. **Reset Web Base Path:**
    - Open your terminal.
-   - Run the `x-ui` command.
+   - Run the `x1-ui` command.
    - Select the option to `Reset Web Base Path`.
 
 2. **Generate or Customize Path:**
    - The path will be randomly generated, or you can enter a custom path.
 
 3. **View Current Settings:**
-   - To view your current settings, use the `x-ui settings` command in the terminal or `View Current Settings` in `x-ui`
+   - To view your current settings, use the `x1-ui settings` command in the terminal or `View Current Settings` in `x1-ui`
 
 ### Security Recommendation:
 - For enhanced security, use a long, random word in your URL structure.
@@ -394,7 +394,7 @@ WARP is built-in, and no additional installation is required. Simply turn on the
 
 To enable the IP Limit functionality, you need to install `fail2ban` and its required files by following these steps:
 
-1. Run the `x-ui` command in the terminal, then choose `IP Limit Management`.
+1. Run the `x1-ui` command in the terminal, then choose `IP Limit Management`.
 2. You will see the following options:
 
    - **Change Ban Duration:** Adjust the duration of bans.
@@ -494,7 +494,7 @@ Enter the user ID in input field number 4. The Telegram accounts with this id wi
 
 #### Usage
 
-- [API Documentation](https://www.postman.com/hsanaei/3x-ui/collection/q1l5l0u/3x-ui)
+- [API Documentation](https://www.postman.com/hsanaei/3x1-ui/collection/q1l5l0u/3x1-ui)
 - `/login` with `POST` user data: `{username: '', password: ''}` for login
 - `/panel/api/inbounds` base for following actions:
 
@@ -540,13 +540,13 @@ Enter the user ID in input field number 4. The Telegram accounts with this id wi
 | XUI_LOG_LEVEL  | `"debug"` \| `"info"` \| `"warn"` \| `"error"` | `"info"`      |
 | XUI_DEBUG      |                   `boolean`                    | `false`       |
 | XUI_BIN_FOLDER |                    `string`                    | `"bin"`       |
-| XUI_DB_FOLDER  |                    `string`                    | `"/etc/x-ui"` |
+| XUI_DB_FOLDER  |                    `string`                    | `"/etc/x1-ui"` |
 | XUI_LOG_FOLDER |                    `string`                    | `"/var/log"`  |
 
 Example:
 
 ```sh
-XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
+XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x1-ui" go build main.go
 ```
 
 </details>
@@ -555,31 +555,31 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/01-overview-dark.png">
-  <img alt="3x-ui" src="./media/01-overview-light.png">
+  <img alt="3x1-ui" src="./media/01-overview-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/02-inbounds-dark.png">
-  <img alt="3x-ui" src="./media/02-inbounds-light.png">
+  <img alt="3x1-ui" src="./media/02-inbounds-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/03-add-inbound-dark.png">
-  <img alt="3x-ui" src="./media/03-add-inbound-light.png">
+  <img alt="3x1-ui" src="./media/03-add-inbound-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/04-add-client-dark.png">
-  <img alt="3x-ui" src="./media/04-add-client-light.png">
+  <img alt="3x1-ui" src="./media/04-add-client-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/05-settings-dark.png">
-  <img alt="3x-ui" src="./media/05-settings-light.png">
+  <img alt="3x1-ui" src="./media/05-settings-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/06-configs-dark.png">
-  <img alt="3x-ui" src="./media/06-configs-light.png">
+  <img alt="3x1-ui" src="./media/06-configs-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/07-bot-dark.png">
-  <img alt="3x-ui" src="./media/07-bot-light.png">
+  <img alt="3x1-ui" src="./media/07-bot-light.png">
 </picture>
 
 ## A Special Thanks to
@@ -593,4 +593,4 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 
 ## Stargazers over Time
 
-[![Stargazers over time](https://starchart.cc/MHSanaei/3x-ui.svg?variant=adaptive)](https://starchart.cc/MHSanaei/3x-ui)
+[![Stargazers over time](https://starchart.cc/AlirezaSadeghi72/3x1-ui.svg?variant=adaptive)](https://starchart.cc/AlirezaSadeghi72/3x1-ui)

@@ -16,12 +16,12 @@ import (
 	"strings"
 	"time"
 
-	"x-ui/config"
-	"x-ui/database"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/util/sys"
-	"x-ui/xray"
+	"x1-ui/config"
+	"x1-ui/database"
+	"x1-ui/logger"
+	"x1-ui/util/common"
+	"x1-ui/util/sys"
+	"x1-ui/xray"
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
@@ -425,7 +425,7 @@ func (s *ServerService) GetLogs(count string, level string, syslog string) []str
 	var lines []string
 
 	if syslog == "true" {
-		cmdArgs := []string{"journalctl", "-u", "x-ui", "--no-pager", "-n", count, "-p", level}
+		cmdArgs := []string{"journalctl", "-u", "x1-ui", "--no-pager", "-n", count, "-p", level}
 		// Run the command
 		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 		var out bytes.Buffer

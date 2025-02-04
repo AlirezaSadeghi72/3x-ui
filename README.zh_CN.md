@@ -2,17 +2,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./media/3x-ui-dark.png">
-    <img alt="3x-ui" src="./media/3x-ui-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="./media/3x1-ui-dark.png">
+    <img alt="3x1-ui" src="./media/3x1-ui-light.png">
   </picture>
 </p>
 
 **一个更好的面板 • 基于Xray Core构建**
 
-[![](https://img.shields.io/github/v/release/mhsanaei/3x-ui.svg)](https://github.com/MHSanaei/3x-ui/releases)
-[![](https://img.shields.io/github/actions/workflow/status/mhsanaei/3x-ui/release.yml.svg)](#)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/mhsanaei/3x-ui.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/mhsanaei/3x-ui/total.svg)](#)
+[![](https://img.shields.io/github/v/release/AlirezaSadeghi72/3x1-ui.svg)](https://github.com/AlirezaSadeghi72/3x1-ui/releases)
+[![](https://img.shields.io/github/actions/workflow/status/AlirezaSadeghi72/3x1-ui/release.yml.svg)](#)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/AlirezaSadeghi72/3x1-ui.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/AlirezaSadeghi72/3x1-ui/total.svg)](#)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 > **Disclaimer:** 此项目仅供个人学习交流，请不要用于非法目的，请不要在生产环境中使用。
@@ -32,7 +32,7 @@
 ## 安装 & 升级
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/AlirezaSadeghi72/3x1-ui/master/install.sh)
 ```
 
 ## 安装旧版本 (我们不建议)
@@ -40,7 +40,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.
 要安装您想要的版本，请使用以下安装命令。例如，ver `v1.7.9`:
 
 ```
-VERSION=v1.7.9 && <(curl -Ls "https://raw.githubusercontent.com/mhsanaei/3x-ui/$VERSION/install.sh") $VERSION
+VERSION=v1.7.9 && <(curl -Ls "https://raw.githubusercontent.com/AlirezaSadeghi72/3x1-ui/$VERSION/install.sh") $VERSION
 ```
 
 ### SSL证书
@@ -53,7 +53,7 @@ VERSION=v1.7.9 && <(curl -Ls "https://raw.githubusercontent.com/mhsanaei/3x-ui/$
 使用ACME管理SSL证书：
 
 1. 确保您的域名正确解析到服务器。
-2. 在终端中运行 `x-ui` 命令，然后选择 `SSL证书管理`。
+2. 在终端中运行 `x1-ui` 命令，然后选择 `SSL证书管理`。
 3. 您将看到以下选项：
 
    - **Get SSL:** 获取SSL证书。
@@ -82,7 +82,7 @@ certbot renew --dry-run
 
 **如何获取Cloudflare全局API密钥：**
 
-1. 在终端中运行 `x-ui` 命令，然后选择 `Cloudflare SSL证书`。
+1. 在终端中运行 `x1-ui` 命令，然后选择 `Cloudflare SSL证书`。
 2. 访问链接：[Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens)。
 3. 点击“查看全局API密钥”（参见下图）：
    ![](media/APIKey1.PNG)
@@ -116,10 +116,10 @@ case "${ARCH}" in
 esac
 
 
-wget https://github.com/MHSanaei/3x-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
+wget https://github.com/AlirezaSadeghi72/3x1-ui/releases/latest/download/x1-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
-2. 下载压缩包后，执行以下命令安装或升级 x-ui：
+2. 下载压缩包后，执行以下命令安装或升级 x1-ui：
 
 ```sh
 ARCH=$(uname -m)
@@ -134,15 +134,15 @@ case "${ARCH}" in
 esac
 
 cd /root/
-rm -rf x-ui/ /usr/local/x-ui/ /usr/bin/x-ui
-tar zxvf x-ui-linux-${XUI_ARCH}.tar.gz
-chmod +x x-ui/x-ui x-ui/bin/xray-linux-* x-ui/x-ui.sh
-cp x-ui/x-ui.sh /usr/bin/x-ui
-cp -f x-ui/x-ui.service /etc/systemd/system/
-mv x-ui/ /usr/local/
+rm -rf x1-ui/ /usr/local/x1-ui/ /usr/bin/x1-ui
+tar zxvf x1-ui-linux-${XUI_ARCH}.tar.gz
+chmod +x x1-ui/x1-ui x1-ui/bin/xray-linux-* x1-ui/x1-ui.sh
+cp x1-ui/x1-ui.sh /usr/bin/x1-ui
+cp -f x1-ui/x1-ui.service /etc/systemd/system/
+mv x1-ui/ /usr/local/
 systemctl daemon-reload
-systemctl enable x-ui
-systemctl restart x-ui
+systemctl enable x1-ui
+systemctl restart x1-ui
 ```
 
 </details>
@@ -163,8 +163,8 @@ systemctl restart x-ui
 2. 克隆仓库：
 
    ```sh
-   git clone https://github.com/MHSanaei/3x-ui.git
-   cd 3x-ui
+   git clone https://github.com/AlirezaSadeghi72/3x1-ui.git
+   cd 3x1-ui
    ```
 
 3. 运行服务：
@@ -178,30 +178,30 @@ systemctl restart x-ui
    ```sh
    docker run -itd \
       -e XRAY_VMESS_AEAD_FORCED=false \
-      -v $PWD/db/:/etc/x-ui/ \
+      -v $PWD/db/:/etc/x1-ui/ \
       -v $PWD/cert/:/root/cert/ \
       --network=host \
       --restart=unless-stopped \
-      --name 3x-ui \
-      ghcr.io/mhsanaei/3x-ui:latest
+      --name 3x1-ui \
+      ghcr.io/AlirezaSadeghi72/3x1-ui:latest
    ```
 
 更新至最新版本
 
    ```sh
-    cd 3x-ui
+    cd 3x1-ui
     docker compose down
-    docker compose pull 3x-ui
+    docker compose pull 3x1-ui
     docker compose up -d
    ```
 
-从Docker中删除3x-ui
+从Docker中删除3x1-ui
 
    ```sh
-    docker stop 3x-ui
-    docker rm 3x-ui
+    docker stop 3x1-ui
+    docker rm 3x1-ui
     cd --
-    rm -r 3x-ui
+    rm -r 3x1-ui
    ```
 
 </details>
@@ -333,20 +333,20 @@ location /sub {
   您可以直接在面板中方便地进行数据库备份和还原。
 
 - **数据库路径:**
-  - `/etc/x-ui/x-ui.db`
+  - `/etc/x1-ui/x1-ui.db`
 
 ### Web 基础路径
 
 1. **重置 Web 基础路径:**
    - 打开终端。
-   - 运行 `x-ui` 命令。
+   - 运行 `x1-ui` 命令。
    - 选择 `重置 Web 基础路径` 选项。
 
 2. **生成或自定义路径:**
    - 路径将会随机生成，或者您可以输入自定义路径。
 
 3. **查看当前设置:**
-   - 要查看当前设置，请在终端中使用 `x-ui settings` 命令，或在 `x-ui` 面板中点击 `查看当前设置`。
+   - 要查看当前设置，请在终端中使用 `x1-ui settings` 命令，或在 `x1-ui` 面板中点击 `查看当前设置`。
 
 ### 安全建议：
 - 为了提高安全性，建议在URL结构中使用一个长的随机词。
@@ -386,7 +386,7 @@ WARP 已内置，无需额外安装。只需在面板中开启相关配置即可
 
 要启用 IP 限制功能，您需要安装 `fail2ban` 及其所需的文件，步骤如下：
 
-1. 在终端中运行 `x-ui` 命令，然后选择 `IP 限制管理`。
+1. 在终端中运行 `x1-ui` 命令，然后选择 `IP 限制管理`。
 2. 您将看到以下选项：
 
    - **更改封禁时长:** 调整封禁时长。
@@ -486,7 +486,7 @@ Web 面板通过 Telegram Bot 支持每日流量、面板登录、数据库备�
 
 #### 使用
 
-- [API 文档](https://www.postman.com/hsanaei/3x-ui/collection/q1l5l0u/3x-ui)
+- [API 文档](https://www.postman.com/hsanaei/3x1-ui/collection/q1l5l0u/3x1-ui)
 - `/login` 使用 `POST` 用户名称 & 密码： `{username: '', password: ''}` 登录
 - `/panel/api/inbounds` 以下操作的基础：
 
@@ -531,13 +531,13 @@ Web 面板通过 Telegram Bot 支持每日流量、面板登录、数据库备�
 | XUI_LOG_LEVEL  | `"debug"` \| `"info"` \| `"warn"` \| `"error"` | `"info"`      |
 | XUI_DEBUG      |                   `boolean`                    | `false`       |
 | XUI_BIN_FOLDER |                    `string`                    | `"bin"`       |
-| XUI_DB_FOLDER  |                    `string`                    | `"/etc/x-ui"` |
+| XUI_DB_FOLDER  |                    `string`                    | `"/etc/x1-ui"` |
 | XUI_LOG_FOLDER |                    `string`                    | `"/var/log"`  |
 
 例子：
 
 ```sh
-XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
+XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x1-ui" go build main.go
 ```
 
 </details>
@@ -546,31 +546,31 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/01-overview-dark.png">
-  <img alt="3x-ui" src="./media/01-overview-light.png">
+  <img alt="3x1-ui" src="./media/01-overview-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/02-inbounds-dark.png">
-  <img alt="3x-ui" src="./media/02-inbounds-light.png">
+  <img alt="3x1-ui" src="./media/02-inbounds-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/03-add-inbound-dark.png">
-  <img alt="3x-ui" src="./media/03-add-inbound-light.png">
+  <img alt="3x1-ui" src="./media/03-add-inbound-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/04-add-client-dark.png">
-  <img alt="3x-ui" src="./media/04-add-client-light.png">
+  <img alt="3x1-ui" src="./media/04-add-client-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/05-settings-dark.png">
-  <img alt="3x-ui" src="./media/05-settings-light.png">
+  <img alt="3x1-ui" src="./media/05-settings-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/06-configs-dark.png">
-  <img alt="3x-ui" src="./media/06-configs-light.png">
+  <img alt="3x1-ui" src="./media/06-configs-light.png">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./media/07-bot-dark.png">
-  <img alt="3x-ui" src="./media/07-bot-light.png">
+  <img alt="3x1-ui" src="./media/07-bot-light.png">
 </picture>
 
 ## 特别感谢
@@ -584,4 +584,4 @@ XUI_BIN_FOLDER="bin" XUI_DB_FOLDER="/etc/x-ui" go build main.go
 
 ## Star趋势
 
-[![Stargazers over time](https://starchart.cc/MHSanaei/3x-ui.svg?variant=adaptive)](https://starchart.cc/MHSanaei/3x-ui)
+[![Stargazers over time](https://starchart.cc/AlirezaSadeghi72/3x1-ui.svg?variant=adaptive)](https://starchart.cc/AlirezaSadeghi72/3x1-ui)

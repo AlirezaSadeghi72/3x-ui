@@ -1,4 +1,4 @@
-module x-ui
+module x1-ui
 
 go 1.23.4
 

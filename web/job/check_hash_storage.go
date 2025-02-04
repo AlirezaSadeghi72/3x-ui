@@ -1,7 +1,7 @@
 package job
 
 import (
-	"x-ui/web/service"
+	"x1-ui/web/service"
 )
 
 type CheckHashStorageJob struct {

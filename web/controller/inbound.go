@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"x-ui/database/model"
-	"x-ui/web/service"
-	"x-ui/web/session"
+	"x1-ui/database/model"
+	"x1-ui/web/service"
+	"x1-ui/web/session"
 
 	"github.com/gin-gonic/gin"
 )

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"sync"
 
-	"x-ui/logger"
-	"x-ui/xray"
+	"x1-ui/logger"
+	"x1-ui/xray"
 
 	"go.uber.org/atomic"
 )

@@ -14,15 +14,15 @@ import (
 	"strings"
 	"time"
 
-	"x-ui/config"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/web/controller"
-	"x-ui/web/job"
-	"x-ui/web/locale"
-	"x-ui/web/middleware"
-	"x-ui/web/network"
-	"x-ui/web/service"
+	"x1-ui/config"
+	"x1-ui/logger"
+	"x1-ui/util/common"
+	"x1-ui/web/controller"
+	"x1-ui/web/job"
+	"x1-ui/web/locale"
+	"x1-ui/web/middleware"
+	"x1-ui/web/network"
+	"x1-ui/web/service"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/sessions"
@@ -180,7 +180,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	assetsBasePath := basePath + "assets/"
 
 	store := cookie.NewStore(secret)
-	engine.Use(sessions.Sessions("3x-ui", store))
+	engine.Use(sessions.Sessions("3x1-ui", store))
 	engine.Use(func(c *gin.Context) {
 		c.Set("base_path", basePath)
 	})

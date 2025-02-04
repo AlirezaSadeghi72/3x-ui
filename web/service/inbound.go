@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"x-ui/database"
-	"x-ui/database/model"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/xray"
+	"x1-ui/database"
+	"x1-ui/database/model"
+	"x1-ui/logger"
+	"x1-ui/util/common"
+	"x1-ui/xray"
 
 	"gorm.io/gorm"
 )

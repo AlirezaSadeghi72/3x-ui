@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"x-ui/config"
-	"x-ui/logger"
-	"x-ui/util/common"
-	"x-ui/web/middleware"
-	"x-ui/web/network"
-	"x-ui/web/service"
+	"x1-ui/config"
+	"x1-ui/logger"
+	"x1-ui/util/common"
+	"x1-ui/web/middleware"
+	"x1-ui/web/network"
+	"x1-ui/web/service"
 
 	"github.com/gin-gonic/gin"
 )

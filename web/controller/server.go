@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"time"
 
-	"x-ui/web/global"
-	"x-ui/web/service"
+	"x1-ui/web/global"
+	"x1-ui/web/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -141,7 +141,7 @@ func (a *ServerController) getDb(c *gin.Context) {
 		return
 	}
 
-	filename := "x-ui.db"
+	filename := "x1-ui.db"
 
 	if !isValidFilename(filename) {
 		c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid filename"))
