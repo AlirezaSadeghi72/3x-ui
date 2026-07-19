@@ -14,6 +14,7 @@ import (
 
 const (
 	loginUserKey = "LOGIN_USER"
+	defaultPath  = "/"
 )
 
 func init() {
@@ -28,6 +29,18 @@ func SetLoginUser(c *gin.Context, user *model.User) {
 	}
 	s := sessions.Default(c)
 	s.Set(loginUserKey, *user)
+}
+
+// SetMaxAge configures the session cookie maximum age in seconds.
+// This controls how long the session remains valid before requiring re-authentication.
+func SetMaxAge(c *gin.Context, maxAge int) {
+	s := sessions.Default(c)
+	s.Options(sessions.Options{
+		Path:     defaultPath,
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
 
 // GetLoginUser retrieves the authenticated user from the session.
@@ -58,12 +71,8 @@ func IsLogin(c *gin.Context) bool {
 func ClearSession(c *gin.Context) {
 	s := sessions.Default(c)
 	s.Clear()
-	cookiePath := c.GetString("base_path")
-	if cookiePath == "" {
-		cookiePath = "/"
-	}
 	s.Options(sessions.Options{
-		Path:     cookiePath,
+		Path:     defaultPath,
 		MaxAge:   -1,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,

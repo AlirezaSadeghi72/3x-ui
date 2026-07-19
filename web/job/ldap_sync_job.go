@@ -271,7 +271,10 @@ func (j *LdapSyncJob) deleteClientsNotInLDAP(inboundTag string, ldapEmails map[s
 
 		// Delete in batches
 		for i := 0; i < len(toDelete); i += batchSize {
-			end := min(i+batchSize, len(toDelete))
+			end := i + batchSize
+			if end > len(toDelete) {
+				end = len(toDelete)
+			}
 			batch := toDelete[i:end]
 
 			for _, c := range batch {
@@ -317,6 +320,66 @@ func (j *LdapSyncJob) clientsToJSON(clients []model.Client) string {
 	}
 	b.WriteString("]}")
 	return b.String()
+}
+
+// ensureClientExists adds client with defaults to inbound tag if not present
+func (j *LdapSyncJob) ensureClientExists(inboundTag string, email string, defGB int, defExpiryDays int, defLimitIP int) {
+	inbounds, err := j.inboundService.GetAllInbounds()
+	if err != nil {
+		logger.Warning("ensureClientExists: get inbounds failed:", err)
+		return
+	}
+	var target *model.Inbound
+	for _, ib := range inbounds {
+		if ib.Tag == inboundTag {
+			target = ib
+			break
+		}
+	}
+	if target == nil {
+		logger.Debugf("ensureClientExists: inbound tag %s not found", inboundTag)
+		return
+	}
+	// check if email already exists in this inbound
+	clients, err := j.inboundService.GetClients(target)
+	if err == nil {
+		for _, c := range clients {
+			if c.Email == email {
+				return
+			}
+		}
+	}
+
+	// build new client according to protocol
+	newClient := model.Client{
+		Email:   email,
+		Enable:  true,
+		LimitIP: defLimitIP,
+		TotalGB: int64(defGB),
+	}
+	if defExpiryDays > 0 {
+		newClient.ExpiryTime = time.Now().Add(time.Duration(defExpiryDays) * 24 * time.Hour).UnixMilli()
+	}
+
+	switch target.Protocol {
+	case model.Trojan:
+		newClient.Password = uuid.NewString()
+	case model.Shadowsocks:
+		newClient.Password = uuid.NewString()
+	default: // VMESS/VLESS and others using ID
+		newClient.ID = uuid.NewString()
+	}
+
+	// prepare inbound payload with only the new client
+	payload := &model.Inbound{Id: target.Id}
+	payload.Settings = `{"clients":[` + j.clientToJSON(newClient) + `]}`
+
+	if _, err := j.inboundService.AddInboundClient(payload); err != nil {
+		logger.Warning("ensureClientExists: add client failed:", err)
+	} else {
+		j.xrayService.SetToNeedRestart()
+		logger.Infof("LDAP auto-create: %s in %s", email, inboundTag)
+	}
 }
 
 // clientToJSON serializes minimal client fields to JSON object string without extra deps

@@ -29,17 +29,10 @@ class AllSetting {
         this.subEnable = true;
         this.subJsonEnable = false;
         this.subTitle = "";
-        this.subSupportUrl = "";
-        this.subProfileUrl = "";
-        this.subAnnounce = "";
-        this.subEnableRouting = true;
-        this.subRoutingRules = "";
         this.subListen = "";
         this.subPort = 2096;
         this.subPath = "/sub/";
         this.subJsonPath = "/json/";
-        this.subClashEnable = true;
-        this.subClashPath = "/clash/";
         this.subDomain = "";
         this.externalTrafficInformEnable = false;
         this.externalTrafficInformURI = "";
@@ -50,7 +43,6 @@ class AllSetting {
         this.subShowInfo = true;
         this.subURI = "";
         this.subJsonURI = "";
-        this.subClashURI = "";
         this.subJsonFragment = "";
         this.subJsonNoises = "";
         this.subJsonMux = "";

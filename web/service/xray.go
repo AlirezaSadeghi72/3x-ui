@@ -40,9 +40,6 @@ func (s *XrayService) GetXrayErr() error {
 	}
 
 	err := p.GetErr()
-	if err == nil {
-		return nil
-	}
 
 	if runtime.GOOS == "windows" && err.Error() == "exit status 1" {
 		// exit status 1 on Windows means that Xray process was killed
@@ -118,40 +115,36 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		json.Unmarshal([]byte(inbound.Settings), &settings)
 		clients, ok := settings["clients"].([]any)
 		if ok {
-			// Fast O(N) lookup map for client traffic enablement
+			// check users active or not
 			clientStats := inbound.ClientStats
-			enableMap := make(map[string]bool, len(clientStats))
 			for _, clientTraffic := range clientStats {
-				enableMap[clientTraffic.Email] = clientTraffic.Enable
+				indexDecrease := 0
+				for index, client := range clients {
+					c := client.(map[string]any)
+					if c["email"] == clientTraffic.Email {
+						if !clientTraffic.Enable {
+							clients = RemoveIndex(clients, index-indexDecrease)
+							indexDecrease++
+							logger.Infof("Remove Inbound User %s due to expiration or traffic limit", c["email"])
+						}
+					}
+				}
 			}
 
-			// filter and clean clients
+			// clear client config for additional parameters
 			var final_clients []any
 			for _, client := range clients {
-				c, ok := client.(map[string]any)
-				if !ok {
-					continue
+				c := client.(map[string]any)
+				if c["enable"] != nil {
+					if enable, ok := c["enable"].(bool); ok && !enable {
+						continue
+					}
 				}
-
-				email, _ := c["email"].(string)
-
-				// check users active or not via stats
-				if enable, exists := enableMap[email]; exists && !enable {
-					logger.Infof("Remove Inbound User %s due to expiration or traffic limit", email)
-					continue
-				}
-
-				// check manual disabled flag
-				if manualEnable, ok := c["enable"].(bool); ok && !manualEnable {
-					continue
-				}
-
-				// clear client config for additional parameters
 				for key := range c {
-					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" {
+					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" {
 						delete(c, key)
 					}
-					if flow, ok := c["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {
+					if c["flow"] == "xtls-rprx-vision-udp443" {
 						c["flow"] = "xtls-rprx-vision"
 					}
 				}
@@ -206,10 +199,7 @@ func (s *XrayService) GetXrayTraffic() ([]*xray.Traffic, []*xray.ClientTraffic, 
 		return nil, nil, err
 	}
 	apiPort := p.GetAPIPort()
-	if err := s.xrayAPI.Init(apiPort); err != nil {
-		logger.Debug("Failed to initialize Xray API:", err)
-		return nil, nil, err
-	}
+	s.xrayAPI.Init(apiPort)
 	defer s.xrayAPI.Close()
 
 	traffic, clientTraffic, err := s.xrayAPI.GetTraffic(true)

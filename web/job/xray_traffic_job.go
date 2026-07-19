@@ -5,7 +5,6 @@ import (
 
 	"github.com/mhsanaei/3x-ui/v2/logger"
 	"github.com/mhsanaei/3x-ui/v2/web/service"
-	"github.com/mhsanaei/3x-ui/v2/web/websocket"
 	"github.com/mhsanaei/3x-ui/v2/xray"
 
 	"github.com/valyala/fasthttp"
@@ -48,51 +47,6 @@ func (j *XrayTrafficJob) Run() {
 	}
 	if needRestart0 || needRestart1 {
 		j.xrayService.SetToNeedRestart()
-	}
-
-	// If no frontend client is connected, skip all WebSocket broadcasting routines,
-	// including expensive DB queries for online clients and JSON marshaling.
-	if !websocket.HasClients() {
-		return
-	}
-
-	// Update online clients list and map
-	onlineClients := j.inboundService.GetOnlineClients()
-	lastOnlineMap, err := j.inboundService.GetClientsLastOnline()
-	if err != nil {
-		logger.Warning("get clients last online failed:", err)
-		lastOnlineMap = make(map[string]int64)
-	}
-
-	// Broadcast traffic update (deltas and online stats) via WebSocket
-	trafficUpdate := map[string]any{
-		"traffics":       traffics,
-		"clientTraffics": clientTraffics,
-		"onlineClients":  onlineClients,
-		"lastOnlineMap":  lastOnlineMap,
-	}
-	websocket.BroadcastTraffic(trafficUpdate)
-
-	// Fetch updated inbounds from database with accumulated traffic values
-	// This ensures frontend receives the actual total traffic for real-time UI refresh.
-	updatedInbounds, err := j.inboundService.GetAllInbounds()
-	if err != nil {
-		logger.Warning("get all inbounds for websocket failed:", err)
-	}
-
-	updatedOutbounds, err := j.outboundService.GetOutboundsTraffic()
-	if err != nil {
-		logger.Warning("get all outbounds for websocket failed:", err)
-	}
-
-	// The WebSocket hub will automatically check the payload size.
-	// If it exceeds 100MB, it sends a lightweight 'invalidate' signal instead.
-	if updatedInbounds != nil {
-		websocket.BroadcastInbounds(updatedInbounds)
-	}
-
-	if updatedOutbounds != nil {
-		websocket.BroadcastOutbounds(updatedOutbounds)
 	}
 }
 

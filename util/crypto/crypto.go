@@ -13,5 +13,6 @@ func HashPasswordAsBcrypt(password string) (string, error) {
 
 // CheckPasswordHash verifies if the given password matches the bcrypt hash.
 func CheckPasswordHash(hash, password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

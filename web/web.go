@@ -25,7 +25,6 @@ import (
 	"github.com/mhsanaei/3x-ui/v2/web/middleware"
 	"github.com/mhsanaei/3x-ui/v2/web/network"
 	"github.com/mhsanaei/3x-ui/v2/web/service"
-	"github.com/mhsanaei/3x-ui/v2/web/websocket"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/sessions"
@@ -99,14 +98,10 @@ type Server struct {
 	index *controller.IndexController
 	panel *controller.XUIController
 	api   *controller.APIController
-	ws    *controller.WebSocketController
 
-	xrayService      service.XrayService
-	settingService   service.SettingService
-	tgbotService     service.Tgbot
-	customGeoService *service.CustomGeoService
-
-	wsHub *websocket.Hub
+	xrayService    service.XrayService
+	settingService service.SettingService
+	tgbotService   service.Tgbot
 
 	cron *cron.Cron
 
@@ -201,20 +196,19 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	engine.Use(gzip.Gzip(gzip.DefaultCompression))
+	engine.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{basePath + "panel/api/"})))
 	assetsBasePath := basePath + "assets/"
 
 	store := cookie.NewStore(secret)
 	// Configure default session cookie options, including expiration (MaxAge)
-	sessionOptions := sessions.Options{
-		Path:     basePath,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+	if sessionMaxAge, err := s.settingService.GetSessionMaxAge(); err == nil {
+		store.Options(sessions.Options{
+			Path:     "/",
+			MaxAge:   sessionMaxAge * 60, // minutes -> seconds
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
 	}
-	if sessionMaxAge, err := s.settingService.GetSessionMaxAge(); err == nil && sessionMaxAge > 0 {
-		sessionOptions.MaxAge = sessionMaxAge * 60 // minutes -> seconds
-	}
-	store.Options(sessionOptions)
 	engine.Use(sessions.Sessions("3x-ui", store))
 	engine.Use(func(c *gin.Context) {
 		c.Set("base_path", basePath)
@@ -270,16 +264,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 
 	s.index = controller.NewIndexController(g)
 	s.panel = controller.NewXUIController(g)
-	s.api = controller.NewAPIController(g, s.customGeoService)
-
-	// Initialize WebSocket hub
-	s.wsHub = websocket.NewHub()
-	go s.wsHub.Run()
-
-	// Initialize WebSocket controller
-	s.ws = controller.NewWebSocketController(s.wsHub)
-	// Register WebSocket route with basePath (g already has basePath prefix)
-	g.GET("/ws", s.ws.HandleWebSocket)
+	s.api = controller.NewAPIController(g)
 
 	// Chrome DevTools endpoint for debugging web apps
 	engine.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) {
@@ -297,7 +282,6 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 // startTask schedules background jobs (Xray checks, traffic jobs, cron
 // jobs) which the panel relies on for periodic maintenance and monitoring.
 func (s *Server) startTask() {
-	s.customGeoService.EnsureOnStartup()
 	err := s.xrayService.RestartXray(true)
 	if err != nil {
 		logger.Warning("start xray failed:", err)
@@ -328,8 +312,6 @@ func (s *Server) startTask() {
 	s.cron.AddJob("@daily", job.NewClearLogsJob())
 
 	// Inbound traffic reset jobs
-	// Run every hour
-	s.cron.AddJob("@hourly", job.NewPeriodicTrafficResetJob("hourly"))
 	// Run once a day, midnight
 	s.cron.AddJob("@daily", job.NewPeriodicTrafficResetJob("daily"))
 	// Run once a week, midnight between Sat/Sun
@@ -353,17 +335,14 @@ func (s *Server) startTask() {
 	isTgbotenabled, err := s.settingService.GetTgbotEnabled()
 	if (err == nil) && (isTgbotenabled) {
 		runtime, err := s.settingService.GetTgbotRuntime()
-		if err != nil {
-			logger.Warningf("Add NewStatsNotifyJob: failed to load runtime: %v; using default @daily", err)
-			runtime = "@daily"
-		} else if strings.TrimSpace(runtime) == "" {
-			logger.Warning("Add NewStatsNotifyJob runtime is empty, using default @daily")
+		if err != nil || runtime == "" {
+			logger.Errorf("Add NewStatsNotifyJob error[%s], Runtime[%s] invalid, will run default", err, runtime)
 			runtime = "@daily"
 		}
 		logger.Infof("Tg notify enabled,run at %s", runtime)
 		_, err = s.cron.AddJob(runtime, job.NewStatsNotifyJob())
 		if err != nil {
-			logger.Warningf("Add NewStatsNotifyJob: failed to schedule runtime %q: %v", runtime, err)
+			logger.Warning("Add NewStatsNotifyJob error", err)
 			return
 		}
 
@@ -395,8 +374,6 @@ func (s *Server) Start() (err error) {
 	}
 	s.cron = cron.New(cron.WithLocation(loc), cron.WithSeconds())
 	s.cron.Start()
-
-	s.customGeoService = service.NewCustomGeoService()
 
 	engine, err := s.initRouter()
 	if err != nil {
@@ -471,10 +448,6 @@ func (s *Server) Stop() error {
 	if s.tgbotService.IsRunning() {
 		s.tgbotService.Stop()
 	}
-	// Gracefully stop WebSocket hub
-	if s.wsHub != nil {
-		s.wsHub.Stop()
-	}
 	var err1 error
 	var err2 error
 	if s.httpServer != nil {
@@ -494,13 +467,4 @@ func (s *Server) GetCtx() context.Context {
 // GetCron returns the server's cron scheduler instance.
 func (s *Server) GetCron() *cron.Cron {
 	return s.cron
-}
-
-// GetWSHub returns the WebSocket hub instance.
-func (s *Server) GetWSHub() any {
-	return s.wsHub
-}
-
-func (s *Server) RestartXray() error {
-	return s.xrayService.RestartXray(true)
 }

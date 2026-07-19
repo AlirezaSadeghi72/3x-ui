@@ -16,7 +16,6 @@ import (
 	"github.com/mhsanaei/3x-ui/v2/logger"
 	"github.com/mhsanaei/3x-ui/v2/sub"
 	"github.com/mhsanaei/3x-ui/v2/util/crypto"
-	"github.com/mhsanaei/3x-ui/v2/util/sys"
 	"github.com/mhsanaei/3x-ui/v2/web"
 	"github.com/mhsanaei/3x-ui/v2/web/global"
 	"github.com/mhsanaei/3x-ui/v2/web/service"
@@ -71,17 +70,13 @@ func runWebServer() {
 
 	sigCh := make(chan os.Signal, 1)
 	// Trap shutdown signals
-	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, sys.SIGUSR1)
+	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM)
 	for {
 		sig := <-sigCh
 
 		switch sig {
 		case syscall.SIGHUP:
 			logger.Info("Received SIGHUP signal. Restarting servers...")
-
-			// --- FIX FOR TELEGRAM BOT CONFLICT (409): Stop bot before restart ---
-			service.StopBot()
-			// --
 
 			err := server.Stop()
 			if err != nil {
@@ -109,18 +104,8 @@ func runWebServer() {
 				return
 			}
 			log.Println("Sub server restarted successfully.")
-		case sys.SIGUSR1:
-			logger.Info("Received USR1 signal, restarting xray-core...")
-			err := server.RestartXray()
-			if err != nil {
-				logger.Error("Failed to restart xray-core:", err)
-			}
 
 		default:
-			// --- FIX FOR TELEGRAM BOT CONFLICT (409) on full shutdown ---
-			service.StopBot()
-			// ------------------------------------------------------------
-
 			server.Stop()
 			subServer.Stop()
 			log.Println("Shutting down servers.")
@@ -130,22 +115,20 @@ func runWebServer() {
 }
 
 // resetSetting resets all panel settings to their default values.
-func resetSetting() error {
+func resetSetting() {
 	err := database.InitDB(config.GetDBPath())
 	if err != nil {
 		fmt.Println("Failed to initialize database:", err)
-		return err
+		return
 	}
 
 	settingService := service.SettingService{}
 	err = settingService.ResetSettings()
 	if err != nil {
 		fmt.Println("Failed to reset settings:", err)
-		return err
 	} else {
 		fmt.Println("Settings successfully reset.")
 	}
-	return nil
 }
 
 // showSetting displays the current panel settings if show is true.
@@ -257,11 +240,11 @@ func updateTgbotSetting(tgBotToken string, tgBotChatid string, tgBotRuntime stri
 }
 
 // updateSetting updates various panel settings including port, credentials, base path, listen IP, and two-factor authentication.
-func updateSetting(port int, username string, password string, webBasePath string, listenIP string, resetTwoFactor bool) error {
+func updateSetting(port int, username string, password string, webBasePath string, listenIP string, resetTwoFactor bool) {
 	err := database.InitDB(config.GetDBPath())
 	if err != nil {
 		fmt.Println("Database initialization failed:", err)
-		return err
+		return
 	}
 
 	settingService := service.SettingService{}
@@ -313,8 +296,6 @@ func updateSetting(port int, username string, password string, webBasePath strin
 			fmt.Printf("listen %v set successfully", listenIP)
 		}
 	}
-
-	return nil
 }
 
 // updateCert updates the SSL certificate files for the panel.
@@ -339,20 +320,6 @@ func updateCert(publicKey string, privateKey string) {
 			fmt.Println("set certificate private key failed:", err)
 		} else {
 			fmt.Println("set certificate private key success")
-		}
-
-		err = settingService.SetSubCertFile(publicKey)
-		if err != nil {
-			fmt.Println("set certificate for subscription public key failed:", err)
-		} else {
-			fmt.Println("set certificate for subscription public key success")
-		}
-
-		err = settingService.SetSubKeyFile(privateKey)
-		if err != nil {
-			fmt.Println("set certificate for subscription private key failed:", err)
-		} else {
-			fmt.Println("set certificate for subscription private key success")
 		}
 	} else {
 		fmt.Println("both public and private key should be entered.")
@@ -485,13 +452,9 @@ func main() {
 			return
 		}
 		if reset {
-			if err = resetSetting(); err != nil {
-				return
-			}
+			resetSetting()
 		} else {
-			if err = updateSetting(port, username, password, webBasePath, listenIP, resetTwoFactor); err != nil {
-				return
-			}
+			updateSetting(port, username, password, webBasePath, listenIP, resetTwoFactor)
 		}
 		if show {
 			showSetting(show)

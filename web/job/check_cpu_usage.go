@@ -22,11 +22,7 @@ func NewCheckCpuJob() *CheckCpuJob {
 
 // Run checks CPU usage over the last minute and sends a Telegram alert if it exceeds the threshold.
 func (j *CheckCpuJob) Run() {
-	threshold, err := j.settingService.GetTgCpu()
-	if err != nil || threshold <= 0 {
-		// If threshold cannot be retrieved or is not set, skip sending notifications
-		return
-	}
+	threshold, _ := j.settingService.GetTgCpu()
 
 	// get latest status of server
 	percent, err := cpu.Percent(1*time.Minute, false)

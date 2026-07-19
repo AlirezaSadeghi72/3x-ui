@@ -10,8 +10,7 @@
 
     <a-form-item label='{{ i18n "protocol" }}'>
         <a-select v-model="inbound.protocol" :disabled="isEdit" :dropdown-class-name="themeSwitcher.currentTheme">
-            <a-select-option v-for="p in Protocols" :key="p" :value="p">[[ p
-                ]]</a-select-option>
+            <a-select-option v-for="p in Protocols" :key="p" :value="p">[[ p ]]</a-select-option>
         </a-select>
     </a-form-item>
 
@@ -49,14 +48,13 @@
         <template slot="label">
             <a-tooltip>
                 <template slot="title">
-                    <span>{{ i18n "pages.inbounds.periodicTrafficResetDesc"
-                        }}</span>
+                    <span>{{ i18n "pages.inbounds.periodicTrafficResetDesc" }}</span>
                     <br v-if="dbInbound.lastTrafficResetTime && dbInbound.lastTrafficResetTime > 0">
                     <span v-if="dbInbound.lastTrafficResetTime && dbInbound.lastTrafficResetTime > 0">
                         <strong>{{ i18n "pages.inbounds.lastReset" }}:</strong>
-                        <span>[[
-                            IntlUtil.formatDate(dbInbound.lastTrafficResetTime)
-                            ]]</span>
+                        <span v-if="datepicker == 'gregorian'">[[
+                            moment(dbInbound.lastTrafficResetTime).format('YYYY-MM-DD HH:mm:ss') ]]</span>
+                        <span v-else>[[ DateUtil.convertToJalalian(moment(dbInbound.lastTrafficResetTime)) ]]</span>
                     </span>
                 </template>
                 {{ i18n "pages.inbounds.periodicTrafficResetTitle" }}
@@ -64,19 +62,10 @@
             </a-tooltip>
         </template>
         <a-select v-model="dbInbound.trafficReset" :dropdown-class-name="themeSwitcher.currentTheme">
-            <a-select-option value="never">{{ i18n
-                "pages.inbounds.periodicTrafficReset.never" }}</a-select-option>
-            <a-select-option value="hourly">{{ i18n
-                "pages.inbounds.periodicTrafficReset.hourly"
-                }}</a-select-option>
-            <a-select-option value="daily">{{ i18n
-                "pages.inbounds.periodicTrafficReset.daily" }}</a-select-option>
-            <a-select-option value="weekly">{{ i18n
-                "pages.inbounds.periodicTrafficReset.weekly"
-                }}</a-select-option>
-            <a-select-option value="monthly">{{ i18n
-                "pages.inbounds.periodicTrafficReset.monthly"
-                }}</a-select-option>
+            <a-select-option value="never">{{ i18n "pages.inbounds.periodicTrafficReset.never" }}</a-select-option>
+            <a-select-option value="daily">{{ i18n "pages.inbounds.periodicTrafficReset.daily" }}</a-select-option>
+            <a-select-option value="weekly">{{ i18n "pages.inbounds.periodicTrafficReset.weekly" }}</a-select-option>
+            <a-select-option value="monthly">{{ i18n "pages.inbounds.periodicTrafficReset.monthly" }}</a-select-option>
         </a-select>
     </a-form-item>
 
@@ -84,8 +73,7 @@
         <template slot="label">
             <a-tooltip>
                 <template slot="title">
-                    <span>{{ i18n "pages.inbounds.leaveBlankToNeverExpire"
-                        }}</span>
+                    <span>{{ i18n "pages.inbounds.leaveBlankToNeverExpire" }}</span>
                 </template>
                 {{ i18n "pages.inbounds.expireDate" }}
                 <a-icon type="question-circle"></a-icon>
@@ -138,16 +126,6 @@
 <!-- wireguard -->
 <template v-if="inbound.protocol === Protocols.WIREGUARD">
     {{template "form/wireguard"}}
-</template>
-
-<!-- tun -->
-<template v-if="inbound.protocol === Protocols.TUN">
-    {{template "form/tun"}}
-</template>
-
-<!-- hysteria -->
-<template v-if="inbound.protocol === Protocols.HYSTERIA">
-    {{template "form/hysteria"}}
 </template>
 
 <!-- stream settings -->

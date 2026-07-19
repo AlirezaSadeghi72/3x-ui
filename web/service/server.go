@@ -529,18 +529,6 @@ func (s *ServerService) GetXrayVersions() ([]string, error) {
 	}
 	defer resp.Body.Close()
 
-	// Check HTTP status code - GitHub API returns object instead of array on error
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		var errorResponse struct {
-			Message string `json:"message"`
-		}
-		if json.Unmarshal(bodyBytes, &errorResponse) == nil && errorResponse.Message != "" {
-			return nil, fmt.Errorf("GitHub API error: %s", errorResponse.Message)
-		}
-		return nil, fmt.Errorf("GitHub API returned status %d: %s", resp.StatusCode, resp.Status)
-	}
-
 	buffer := bytes.NewBuffer(make([]byte, bufferSize))
 	buffer.Reset()
 	if _, err := buffer.ReadFrom(resp.Body); err != nil {
@@ -567,7 +555,7 @@ func (s *ServerService) GetXrayVersions() ([]string, error) {
 			continue
 		}
 
-		if major > 26 || (major == 26 && minor > 3) || (major == 26 && minor == 3 && patch >= 10) {
+		if major > 25 || (major == 25 && minor > 9) || (major == 25 && minor == 9 && patch >= 11) {
 			versions = append(versions, release.TagName)
 		}
 	}
@@ -806,17 +794,17 @@ func (s *ServerService) GetXrayLogs(
 		for i, part := range parts {
 
 			if i == 0 {
-				dateTime, err := time.ParseInLocation("2006/01/02 15:04:05.999999", parts[0]+" "+parts[1], time.Local)
+				dateTime, err := time.Parse("2006/01/02 15:04:05.999999", parts[0]+" "+parts[1])
 				if err != nil {
 					continue
 				}
-				entry.DateTime = dateTime.UTC()
+				entry.DateTime = dateTime
 			}
 
 			if part == "from" {
-				entry.FromAddress = strings.TrimLeft(parts[i+1], "/")
+				entry.FromAddress = parts[i+1]
 			} else if part == "accepted" {
-				entry.ToAddress = strings.TrimLeft(parts[i+1], "/")
+				entry.ToAddress = parts[i+1]
 			} else if strings.HasPrefix(part, "[") {
 				entry.Inbound = part[1:]
 			} else if strings.HasSuffix(part, "]") {
@@ -1056,78 +1044,43 @@ func (s *ServerService) IsValidGeofileName(filename string) bool {
 }
 
 func (s *ServerService) UpdateGeofile(fileName string) error {
-	type geofileEntry struct {
+	files := []struct {
 		URL      string
 		FileName string
-	}
-	geofileAllowlist := map[string]geofileEntry{
-		"geoip.dat":      {"https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat", "geoip.dat"},
-		"geosite.dat":    {"https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat", "geosite.dat"},
-		"geoip_IR.dat":   {"https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat", "geoip_IR.dat"},
-		"geosite_IR.dat": {"https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat", "geosite_IR.dat"},
-		"geoip_RU.dat":   {"https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat", "geoip_RU.dat"},
-		"geosite_RU.dat": {"https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat", "geosite_RU.dat"},
+	}{
+		{"https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat", "geoip.dat"},
+		{"https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat", "geosite.dat"},
+		{"https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat", "geoip_IR.dat"},
+		{"https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat", "geosite_IR.dat"},
+		{"https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat", "geoip_RU.dat"},
+		{"https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat", "geosite_RU.dat"},
 	}
 
 	// Strict allowlist check to avoid writing uncontrolled files
 	if fileName != "" {
-		if _, ok := geofileAllowlist[fileName]; !ok {
-			return common.NewErrorf("Invalid geofile name: %q not in allowlist", fileName)
-		}
-	}
-
-	downloadFile := func(url, destPath string) error {
-		var req *http.Request
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return common.NewErrorf("Failed to create HTTP request for %s: %v", url, err)
+		// Use the centralized validation function
+		if !s.IsValidGeofileName(fileName) {
+			return common.NewErrorf("Invalid geofile name: contains unsafe path characters: %s", fileName)
 		}
 
-		var localFileModTime time.Time
-		if fileInfo, err := os.Stat(destPath); err == nil {
-			localFileModTime = fileInfo.ModTime()
-			if !localFileModTime.IsZero() {
-				req.Header.Set("If-Modified-Since", localFileModTime.UTC().Format(http.TimeFormat))
+		// Ensure the filename matches exactly one from our allowlist
+		isAllowed := false
+		for _, file := range files {
+			if fileName == file.FileName {
+				isAllowed = true
+				break
 			}
 		}
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
+		if !isAllowed {
+			return common.NewErrorf("Invalid geofile name: %s not in allowlist", fileName)
+		}
+	}
+	downloadFile := func(url, destPath string) error {
+		resp, err := http.Get(url)
 		if err != nil {
 			return common.NewErrorf("Failed to download Geofile from %s: %v", url, err)
 		}
 		defer resp.Body.Close()
-
-		// Parse Last-Modified header from server
-		var serverModTime time.Time
-		serverModTimeStr := resp.Header.Get("Last-Modified")
-		if serverModTimeStr != "" {
-			parsedTime, err := time.Parse(http.TimeFormat, serverModTimeStr)
-			if err != nil {
-				logger.Warningf("Failed to parse Last-Modified header for %s: %v", url, err)
-			} else {
-				serverModTime = parsedTime
-			}
-		}
-
-		// Function to update local file's modification time
-		updateFileModTime := func() {
-			if !serverModTime.IsZero() {
-				if err := os.Chtimes(destPath, serverModTime, serverModTime); err != nil {
-					logger.Warningf("Failed to update modification time for %s: %v", destPath, err)
-				}
-			}
-		}
-
-		// Handle 304 Not Modified
-		if resp.StatusCode == http.StatusNotModified {
-			updateFileModTime()
-			return nil
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return common.NewErrorf("Failed to download Geofile from %s: received status code %d", url, resp.StatusCode)
-		}
 
 		file, err := os.Create(destPath)
 		if err != nil {
@@ -1140,25 +1093,39 @@ func (s *ServerService) UpdateGeofile(fileName string) error {
 			return common.NewErrorf("Failed to save Geofile %s: %v", destPath, err)
 		}
 
-		updateFileModTime()
 		return nil
 	}
 
 	var errorMessages []string
 
 	if fileName == "" {
-		// Download all geofiles
-		for _, entry := range geofileAllowlist {
-			destPath := filepath.Join(config.GetBinFolderPath(), entry.FileName)
-			if err := downloadFile(entry.URL, destPath); err != nil {
-				errorMessages = append(errorMessages, fmt.Sprintf("Error downloading Geofile '%s': %v", entry.FileName, err))
+		for _, file := range files {
+			// Sanitize the filename from our allowlist as an extra precaution
+			destPath := filepath.Join(config.GetBinFolderPath(), filepath.Base(file.FileName))
+
+			if err := downloadFile(file.URL, destPath); err != nil {
+				errorMessages = append(errorMessages, fmt.Sprintf("Error downloading Geofile '%s': %v", file.FileName, err))
 			}
 		}
 	} else {
-		entry := geofileAllowlist[fileName]
-		destPath := filepath.Join(config.GetBinFolderPath(), entry.FileName)
-		if err := downloadFile(entry.URL, destPath); err != nil {
-			errorMessages = append(errorMessages, fmt.Sprintf("Error downloading Geofile '%s': %v", entry.FileName, err))
+		// Use filepath.Base to ensure we only get the filename component, no path traversal
+		safeName := filepath.Base(fileName)
+		destPath := filepath.Join(config.GetBinFolderPath(), safeName)
+
+		var fileURL string
+		for _, file := range files {
+			if file.FileName == fileName {
+				fileURL = file.URL
+				break
+			}
+		}
+
+		if fileURL == "" {
+			errorMessages = append(errorMessages, fmt.Sprintf("File '%s' not found in the list of Geofiles", fileName))
+		} else {
+			if err := downloadFile(fileURL, destPath); err != nil {
+				errorMessages = append(errorMessages, fmt.Sprintf("Error downloading Geofile '%s': %v", fileName, err))
+			}
 		}
 	}
 
@@ -1226,7 +1193,7 @@ func (s *ServerService) GetNewmldsa65() (any, error) {
 	return keyPair, nil
 }
 
-func (s *ServerService) GetNewEchCert(sni string) (any, error) {
+func (s *ServerService) GetNewEchCert(sni string) (interface{}, error) {
 	// Run the command
 	cmd := exec.Command(xray.GetBinaryPath(), "tls", "ech", "--serverName", sni)
 	var out bytes.Buffer
@@ -1244,7 +1211,7 @@ func (s *ServerService) GetNewEchCert(sni string) (any, error) {
 	configList := lines[1]
 	serverKeys := lines[3]
 
-	return map[string]any{
+	return map[string]interface{}{
 		"echServerKeys": serverKeys,
 		"echConfigList": configList,
 	}, nil

@@ -7,7 +7,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v2/database/model"
 	"github.com/mhsanaei/3x-ui/v2/logger"
 	"github.com/mhsanaei/3x-ui/v2/util/crypto"
-	ldaputil "github.com/mhsanaei/3x-ui/v2/util/ldap"
+    ldaputil "github.com/mhsanaei/3x-ui/v2/util/ldap"
 	"github.com/xlzd/gotp"
 	"gorm.io/gorm"
 )
@@ -33,7 +33,7 @@ func (s *UserService) GetFirstUser() (*model.User, error) {
 	return user, nil
 }
 
-func (s *UserService) CheckUser(username string, password string, twoFactorCode string) (*model.User, error) {
+func (s *UserService) CheckUser(username string, password string, twoFactorCode string) *model.User {
 	db := database.GetDB()
 
 	user := &model.User{}
@@ -43,47 +43,49 @@ func (s *UserService) CheckUser(username string, password string, twoFactorCode 
 		First(user).
 		Error
 	if err == gorm.ErrRecordNotFound {
-		return nil, errors.New("invalid credentials")
+		return nil
 	} else if err != nil {
 		logger.Warning("check user err:", err)
-		return nil, err
+		return nil
 	}
 
-	if !crypto.CheckPasswordHash(user.Password, password) {
-		ldapEnabled, _ := s.settingService.GetLdapEnable()
-		if !ldapEnabled {
-			return nil, errors.New("invalid credentials")
-		}
+    // If LDAP enabled and local password check fails, attempt LDAP auth
+    if !crypto.CheckPasswordHash(user.Password, password) {
+        ldapEnabled, _ := s.settingService.GetLdapEnable()
+        if !ldapEnabled {
+            return nil
+        }
 
-		host, _ := s.settingService.GetLdapHost()
-		port, _ := s.settingService.GetLdapPort()
-		useTLS, _ := s.settingService.GetLdapUseTLS()
-		bindDN, _ := s.settingService.GetLdapBindDN()
-		ldapPass, _ := s.settingService.GetLdapPassword()
-		baseDN, _ := s.settingService.GetLdapBaseDN()
-		userFilter, _ := s.settingService.GetLdapUserFilter()
-		userAttr, _ := s.settingService.GetLdapUserAttr()
+        host, _ := s.settingService.GetLdapHost()
+        port, _ := s.settingService.GetLdapPort()
+        useTLS, _ := s.settingService.GetLdapUseTLS()
+        bindDN, _ := s.settingService.GetLdapBindDN()
+        ldapPass, _ := s.settingService.GetLdapPassword()
+        baseDN, _ := s.settingService.GetLdapBaseDN()
+        userFilter, _ := s.settingService.GetLdapUserFilter()
+        userAttr, _ := s.settingService.GetLdapUserAttr()
 
-		cfg := ldaputil.Config{
-			Host:       host,
-			Port:       port,
-			UseTLS:     useTLS,
-			BindDN:     bindDN,
-			Password:   ldapPass,
-			BaseDN:     baseDN,
-			UserFilter: userFilter,
-			UserAttr:   userAttr,
-		}
-		ok, err := ldaputil.AuthenticateUser(cfg, username, password)
-		if err != nil || !ok {
-			return nil, errors.New("invalid credentials")
-		}
-	}
+        cfg := ldaputil.Config{
+            Host: host,
+            Port: port,
+            UseTLS: useTLS,
+            BindDN: bindDN,
+            Password: ldapPass,
+            BaseDN: baseDN,
+            UserFilter: userFilter,
+            UserAttr: userAttr,
+        }
+        ok, err := ldaputil.AuthenticateUser(cfg, username, password)
+        if err != nil || !ok {
+            return nil
+        }
+        // On successful LDAP auth, continue 2FA checks below
+    }
 
 	twoFactorEnable, err := s.settingService.GetTwoFactorEnable()
 	if err != nil {
 		logger.Warning("check two factor err:", err)
-		return nil, err
+		return nil
 	}
 
 	if twoFactorEnable {
@@ -91,15 +93,15 @@ func (s *UserService) CheckUser(username string, password string, twoFactorCode 
 
 		if err != nil {
 			logger.Warning("check two factor token err:", err)
-			return nil, err
+			return nil
 		}
 
 		if gotp.NewDefaultTOTP(twoFactorToken).Now() != twoFactorCode {
-			return nil, errors.New("invalid 2fa code")
+			return nil
 		}
 	}
 
-	return user, nil
+	return user
 }
 
 func (s *UserService) UpdateUser(id int, username string, password string) error {
