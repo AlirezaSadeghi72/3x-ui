@@ -118,6 +118,9 @@ type AllSetting struct {
 	LdapDefaultLimitIP     int    `json:"ldapDefaultLimitIP" form:"ldapDefaultLimitIP" validate:"gte=0"`
 
 	WarpUpdateInterval int `json:"warpUpdateInterval" form:"warpUpdateInterval" validate:"gte=0"`
+
+	IpLimitTTL        int `json:"ipLimitTTL" form:"ipLimitTTL" validate:"gte=0"`
+	IpReplaceThreshold int `json:"ipReplaceThreshold" form:"ipReplaceThreshold" validate:"gte=0"`
 }
 
 type AllSettingView struct {

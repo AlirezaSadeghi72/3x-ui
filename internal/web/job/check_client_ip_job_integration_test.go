@@ -189,11 +189,11 @@ func TestUpdateInboundClientIps_LiveIpNotBannedByStillFreshHistoricals(t *testin
 	seedInboundWithClient(t, "inbound-pr4091", email, 3)
 
 	now := time.Now().Unix()
-	// idle but still within the 30min staleness window.
+	// idle but still within the 300s TTL window.
 	row := seedClientIps(t, email, []IPWithTimestamp{
-		{IP: "10.0.0.1", Timestamp: now - 20*60},
-		{IP: "10.0.0.2", Timestamp: now - 15*60},
-		{IP: "10.0.0.3", Timestamp: now - 10*60},
+		{IP: "10.0.0.1", Timestamp: now - 100},
+		{IP: "10.0.0.2", Timestamp: now - 200},
+		{IP: "10.0.0.3", Timestamp: now - 250},
 	})
 
 	j := NewCheckClientIpJob()

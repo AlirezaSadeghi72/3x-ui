@@ -142,6 +142,10 @@ var defaultValueMap = map[string]string{
 	"smtpCpu":           "80",
 	"smtpMemory":        "80",
 
+	// IP Limit configuration (CGNAT / mobile support)
+	"ipLimitTTL":        "300",
+	"ipReplaceThreshold": "30",
+
 	// Email (SMTP) notifications
 	"smtpEnable":         "false",
 	"smtpHost":           "",
@@ -895,6 +899,21 @@ func (s *SettingService) SetDevChannelEnable(value bool) error {
 // log is missing, so the UI no longer hides the field behind that condition.
 func (s *SettingService) GetIpLimitEnable() (bool, error) {
 	return true, nil
+}
+
+// GetIpLimitTTL returns the TTL in seconds for IP entries in inbound_client_ips.
+// Entries older than this threshold are evicted before merging. A value of 0
+// means: use the legacy 30-minute stale cutoff (backward-compatible behavior).
+func (s *SettingService) GetIpLimitTTL() (int, error) {
+	return s.getInt("ipLimitTTL")
+}
+
+// GetIPReplaceThreshold returns the threshold in seconds for fast IP churn
+// replacement. When a client receives a different IP within this window,
+// the previous IP is replaced rather than appended. A value of 0 disables
+// the replacement behavior.
+func (s *SettingService) GetIPReplaceThreshold() (int, error) {
+	return s.getInt("ipReplaceThreshold")
 }
 
 // GetAccessLogEnable reports whether an Xray access log is configured. Used by

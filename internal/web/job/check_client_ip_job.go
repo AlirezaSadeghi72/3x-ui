@@ -41,6 +41,9 @@ var job *CheckClientIpJob
 
 const defaultXrayAPIPort = 62789
 
+// ipStaleAfterSeconds is the legacy fallback cutoff used when IPLimitTTL
+// is configured as 0 (not set). Keeping the 30-minute default preserves
+// backward compatibility for existing installations.
 const ipStaleAfterSeconds = int64(30 * 60)
 
 // NewCheckClientIpJob creates a new client IP monitoring job instance.
@@ -409,6 +412,48 @@ func mergeClientIps(old, new []IPWithTimestamp, staleCutoff int64, newAlwaysLive
 	return ipMap
 }
 
+// replaceChurnedIPs handles CGNAT IP churn. For each new IP observed in
+// this scan, if there is an existing (different) IP whose timestamp falls
+// within thresholdSec of the new IP's timestamp, the older IP is removed
+// so only the newer IP counts toward the limit. This prevents a mobile
+// client behind CGNAT from inflating the IP count when its NAT binding
+// refreshes frequently. When thresholdSec is 0 the function is a no-op.
+func replaceChurnedIPs(old []IPWithTimestamp, new []IPWithTimestamp, thresholdSec int64) ([]IPWithTimestamp, []IPWithTimestamp) {
+	if thresholdSec <= 0 {
+		return old, new
+	}
+	superseded := make(map[string]bool, len(old))
+	for _, n := range new {
+		for _, o := range old {
+			if o.IP == n.IP || superseded[o.IP] {
+				continue
+			}
+			diff := n.Timestamp - o.Timestamp
+			if diff >= 0 && diff <= thresholdSec {
+				superseded[o.IP] = true
+				logger.Debugf("[LimitIP] Fast IP change detected: IP %s (ts=%d) replaced by %s (ts=%d) within %d s threshold", o.IP, o.Timestamp, n.IP, n.Timestamp, thresholdSec)
+				break
+			}
+		}
+	}
+	filteredOld := make([]IPWithTimestamp, 0, len(old)-len(superseded))
+	for _, o := range old {
+		if !superseded[o.IP] {
+			filteredOld = append(filteredOld, o)
+		}
+	}
+	return filteredOld, new
+}
+
+// staleCutoffForTTL returns the unix-seconds cutoff for evicting stale IPs.
+// When ttlSec is 0 the legacy 30-minute cutoff is used (backward compatible).
+func staleCutoffForTTL(ttlSec int64) int64 {
+	if ttlSec <= 0 {
+		return time.Now().Unix() - ipStaleAfterSeconds
+	}
+	return time.Now().Unix() - ttlSec
+}
+
 // selectIpsToBan splits the live IPs (sorted oldest-first by partitionLiveIps)
 // into the newest `limit` entries to keep and the older remainder to ban.
 func selectIpsToBan(live []IPWithTimestamp, limit int) (kept, banned []IPWithTimestamp) {
@@ -497,12 +542,41 @@ func (j *CheckClientIpJob) updateInboundClientIps(tx *gorm.DB, inboundClientIps 
 		_ = json.Unmarshal([]byte(inboundClientIps.Ips), &oldIpsWithTime)
 	}
 
-	ipMap := mergeClientIps(oldIpsWithTime, newIpsWithTime, time.Now().Unix()-ipStaleAfterSeconds, observedAreLive)
+	// Apply TTL cleanup: determine the stale cutoff from the configurable
+	// IPLimitTTL setting (0 = legacy 30-minute fallback).
+	ttlSec := int64(0)
+	if v, err := (&service.SettingService{}).GetIpLimitTTL(); err == nil {
+		ttlSec = int64(v)
+	}
+	staleCutoff := staleCutoffForTTL(ttlSec)
+	expiredCount := 0
+	for _, ipTime := range oldIpsWithTime {
+		if ipTime.Timestamp < staleCutoff {
+			expiredCount++
+			logger.Debugf("[LimitIP] IP expired: %s (ts=%d, cutoff=%d)", ipTime.IP, ipTime.Timestamp, staleCutoff)
+		}
+	}
+	if expiredCount > 0 {
+		logger.Infof("[LimitIP] %s: TTL cleanup executed, expired %d IPs (ttl=%d s)", clientEmail, expiredCount, ttlSec)
+	}
+	logger.Debugf("[LimitIP] %s: TTL cutoff=%d (ttlSec=%d), old IPs=%d, new IPs=%d", clientEmail, staleCutoff, ttlSec, len(oldIpsWithTime), len(newIpsWithTime))
+
+	// Apply fast IP churn replacement.
+	thresholdSec := int64(0)
+	if v, err := (&service.SettingService{}).GetIPReplaceThreshold(); err == nil {
+		thresholdSec = int64(v)
+	}
+	filteredOld, filteredNew := replaceChurnedIPs(oldIpsWithTime, newIpsWithTime, thresholdSec)
+	if len(filteredNew) != len(newIpsWithTime) || len(filteredOld) != len(oldIpsWithTime) {
+		logger.Debugf("[LimitIP] %s: churn replaced old=%d->%d new=%d->%d", clientEmail, len(oldIpsWithTime), len(filteredOld), len(newIpsWithTime), len(filteredNew))
+	}
+
+	ipMap := mergeClientIps(filteredOld, filteredNew, staleCutoff, observedAreLive)
 
 	// only ips seen in this scan count toward the limit. see
 	// partitionLiveIps.
-	observedThisScan := make(map[string]bool, len(newIpsWithTime))
-	for _, ipTime := range newIpsWithTime {
+	observedThisScan := make(map[string]bool, len(filteredNew))
+	for _, ipTime := range filteredNew {
 		observedThisScan[ipTime.IP] = true
 	}
 	liveIps, historicalIps := partitionLiveIps(ipMap, observedThisScan)

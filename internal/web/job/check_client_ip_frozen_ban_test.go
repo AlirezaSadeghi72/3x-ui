@@ -28,7 +28,7 @@ func TestUpdateInboundClientIps_FrozenLastSeenBannedOnce(t *testing.T) {
 	seedInboundWithClient(t, "inbound-frozen-ban", email, 1)
 
 	now := time.Now().Unix()
-	deadStart := now - 300
+	deadStart := now - 100
 	live := []IPWithTimestamp{
 		{IP: "10.2.0.1", Timestamp: deadStart},
 		{IP: "192.0.2.7", Timestamp: now},
