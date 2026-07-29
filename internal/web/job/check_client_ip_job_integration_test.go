@@ -201,12 +201,14 @@ func TestUpdateInboundClientIps_LiveIpNotBannedByStillFreshHistoricals(t *testin
 	live := []IPWithTimestamp{
 		{IP: "128.71.1.1", Timestamp: now},
 	}
+	observedLive := map[string]bool{"128.71.1.1": true}
+	staleCutoff := staleCutoffForTTL(0)
 
 	inbound, err := j.getInboundByEmail(email)
 	if err != nil {
 		t.Fatalf("getInboundByEmail: %v", err)
 	}
-	shouldCleanLog, banned := j.updateInboundClientIps(database.GetDB(), row, inbound, email, 3, live, true, false)
+	shouldCleanLog, banned := j.updateInboundClientIps(database.GetDB(), row, inbound, email, 3, live, true, false, staleCutoff, observedLive, 0)
 
 	if shouldCleanLog {
 		t.Fatalf("shouldCleanLog must be false, nothing should have been banned with 1 live ip under limit 3")
@@ -262,7 +264,9 @@ func TestUpdateInboundClientIps_ExcessLiveIpIsStillBanned(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getInboundByEmail: %v", err)
 	}
-	shouldCleanLog, banned := j.updateInboundClientIps(database.GetDB(), row, inbound, email, 1, live, true, false)
+	observedLive := map[string]bool{"10.1.0.1": true, "192.0.2.9": true}
+	staleCutoff := staleCutoffForTTL(0)
+	shouldCleanLog, banned := j.updateInboundClientIps(database.GetDB(), row, inbound, email, 1, live, true, false, staleCutoff, observedLive, 0)
 
 	if !shouldCleanLog {
 		t.Fatalf("shouldCleanLog must be true when the live set exceeds the limit")
