@@ -423,3 +423,153 @@ func TestHasLimitIp_ProbesClientRecords(t *testing.T) {
 		t.Fatal("hasLimitIp = false with a limit_ip=2 client present")
 	}
 }
+
+// scenario 4: TTL expiry cleanup — IPs older than ttlSec are removed
+// from inbound_client_ips, while live and fresh IPs that are within
+// the TTL window survive and participate in enforcement.
+func TestUpdateInboundClientIps_TtlExpiryCleansStaleIps(t *testing.T) {
+	setupIntegrationDB(t)
+
+	const email = "ttl-expiry-user"
+	seedInboundWithClient(t, "inbound-ttl-expiry", email, 5)
+
+	ttlSec := int64(300)
+	now := time.Now().Unix()
+	staleCutoff := now - ttlSec
+
+	// Two IPs inside the TTL window (should survive).
+	// Two IPs outside the TTL window (should be expired).
+	row := seedClientIps(t, email, []IPWithTimestamp{
+		{IP: "10.0.0.1", Timestamp: now - 60},        // fresh, within TTL
+		{IP: "10.0.0.2", Timestamp: now - 100},       // fresh, within TTL
+		{IP: "10.0.0.3", Timestamp: now - ttlSec - 1}, // expired (just past cutoff)
+		{IP: "10.0.0.4", Timestamp: now - ttlSec - 500}, // expired (far past cutoff)
+	})
+
+	j := NewCheckClientIpJob()
+	live := []IPWithTimestamp{
+		{IP: "203.0.113.50", Timestamp: now}, // new live IP
+	}
+	observedLive := map[string]bool{"203.0.113.50": true}
+
+	inbound, err := j.getInboundByEmail(email)
+	if err != nil {
+		t.Fatalf("getInboundByEmail: %v", err)
+	}
+	shouldCleanLog, banned := j.updateInboundClientIps(database.GetDB(), row, inbound, email, 5, live, true, false, staleCutoff, observedLive, 0)
+
+	if shouldCleanLog {
+		t.Fatalf("shouldCleanLog must be false — 1 live IP under limit 5")
+	}
+	if banned {
+		t.Fatalf("banned must be false — 1 live IP under limit 5")
+	}
+
+	persisted := ipSet(readClientIps(t, email))
+	// Fresh IPs should survive.
+	for _, want := range []string{"10.0.0.1", "10.0.0.2", "203.0.113.50"} {
+		if _, ok := persisted[want]; !ok {
+			t.Errorf("expected IP %q to survive TTL cleanup; got %v", want, persisted)
+		}
+	}
+	// Expired IPs must be gone.
+	for _, gone := range []string{"10.0.0.3", "10.0.0.4"} {
+		if _, ok := persisted[gone]; ok {
+			t.Errorf("expired IP %q must have been removed by TTL cleanup; got %v", gone, persisted)
+		}
+	}
+}
+
+// scenario 6: TTL disabled (ttlSec=0) falls back to the legacy 30-minute
+// stale cutoff. IPs older than 30 minutes are expired; IPs within 30 minutes survive.
+func TestUpdateInboundClientIps_TtlDisabledUsesLegacyCutoff(t *testing.T) {
+	setupIntegrationDB(t)
+
+	const email = "ttl-disabled-user"
+	seedInboundWithClient(t, "inbound-ttl-disabled", email, 5)
+
+	now := time.Now().Unix()
+	// TTL=0 → staleCutoff = now - 30min (legacy).
+	staleCutoff := staleCutoffForTTL(0)
+
+	row := seedClientIps(t, email, []IPWithTimestamp{
+		{IP: "10.0.0.1", Timestamp: now - 100},       // 100s old — survives 30min legacy cutoff
+		{IP: "10.0.0.2", Timestamp: now - 2000},       // 33min old — just past legacy cutoff? no, 2000s = 33.3min > 30min
+		{IP: "10.0.0.3", Timestamp: now - 1800 - 1},   // just past 30min legacy cutoff → expired
+	})
+
+	j := NewCheckClientIpJob()
+	live := []IPWithTimestamp{
+		{IP: "198.51.100.1", Timestamp: now},
+	}
+	observedLive := map[string]bool{"198.51.100.1": true}
+
+	inbound, err := j.getInboundByEmail(email)
+	if err != nil {
+		t.Fatalf("getInboundByEmail: %v", err)
+	}
+	shouldCleanLog, banned := j.updateInboundClientIps(database.GetDB(), row, inbound, email, 5, live, true, false, staleCutoff, observedLive, 0)
+
+	if shouldCleanLog {
+		t.Fatalf("shouldCleanLog must be false")
+	}
+	if banned {
+		t.Fatalf("banned must be false")
+	}
+
+	persisted := ipSet(readClientIps(t, email))
+	if _, ok := persisted["10.0.0.1"]; !ok {
+		t.Errorf("IP 10.0.0.1 within 30min legacy cutoff should survive; got %v", persisted)
+	}
+	for _, gone := range []string{"10.0.0.2", "10.0.0.3"} {
+		if _, ok := persisted[gone]; ok {
+			t.Errorf("IP %q past 30min legacy cutoff should be expired; got %v", gone, persisted)
+		}
+	}
+	if _, ok := persisted["198.51.100.1"]; !ok {
+		t.Errorf("live IP 198.51.100.1 must be persisted; got %v", persisted)
+	}
+}
+
+// scenario 7: multi-email isolation — CGNAT churn for one email does not
+// affect the IP tracking of a second email. Each email gets independent
+// enforcements, stale-cutoff expiry, and churn replacement.
+func TestProcessObserved_MultiEmailIsolation(t *testing.T) {
+	setupIntegrationDB(t)
+
+	const emailA = "churn-user-a"
+	const emailB = "stable-user-b"
+
+	now := time.Now().Unix()
+	seedInboundWithClient(t, "inbound-a", emailA, 1)
+	seedInboundWithClient(t, "inbound-b", emailB, 1)
+
+	// Email A: one old IP that will be churned (replaced by a newer one).
+	seedClientIps(t, emailA, []IPWithTimestamp{
+		{IP: "10.1.1.1", Timestamp: now - 100},
+	})
+	// Email B: one old IP that stays (no churn).
+	seedClientIps(t, emailB, []IPWithTimestamp{
+		{IP: "10.2.2.2", Timestamp: now - 100},
+	})
+
+	observed := map[string]map[string]int64{
+		emailA: {"10.1.1.1": now - 100, "10.20.20.1": now}, // churn: old 10.1.1.1 → new 10.20.20.1
+		emailB: {"10.2.2.2": now},                          // no churn, same IP observed again
+	}
+
+	j := NewCheckClientIpJob()
+	j.processObserved(observed, true, true)
+
+	// Email A's IPs should now contain the new IP (old one was churned/expired by TTL).
+	ipsA := ipSet(readClientIps(t, emailA))
+	if _, ok := ipsA["10.20.20.1"]; !ok {
+		t.Errorf("email A should have the new IP after churn; got %v", ipsA)
+	}
+
+	// Email B's IP should be untouched by email A's churn.
+	ipsB := ipSet(readClientIps(t, emailB))
+	if _, ok := ipsB["10.2.2.2"]; !ok {
+		t.Errorf("email B should retain its IP unaffected by email A's churn; got %v", ipsB)
+	}
+}

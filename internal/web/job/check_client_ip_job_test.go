@@ -151,6 +151,104 @@ func collectIps(entries []IPWithTimestamp) []string {
 	return out
 }
 
+//nolint:unparam // helper used by replaceChurnedIPs tests only
+func observedTrue(ips ...string) map[string]bool {
+	m := make(map[string]bool, len(ips))
+	for _, ip := range ips {
+		m[ip] = true
+	}
+	return m
+}
+
+func TestReplaceChurnedIPs(t *testing.T) {
+	tests := []struct {
+		name            string
+		old             []IPWithTimestamp
+		new             []IPWithTimestamp
+		observed        map[string]bool
+		thresholdSec    int64
+		wantFilteredOld []string // IPs remaining in old after filtering
+		wantSuperseded  []string // IPs that were replaced (superseded)
+	}{
+		{
+			name:            "one-device-cgnat-churn-replaces-prev-ip",
+			old:             []IPWithTimestamp{{IP: "1.1.1.1", Timestamp: 1000}},
+			new:             []IPWithTimestamp{{IP: "2.2.2.2", Timestamp: 1015}},
+			observed:        observedTrue("2.2.2.2"),
+			thresholdSec:    30,
+			wantFilteredOld: nil,
+			wantSuperseded:  []string{"1.1.1.1"},
+		},
+		{
+			name:            "two-devices-both-live-no-replacement",
+			old:             []IPWithTimestamp{{IP: "1.1.1.1", Timestamp: 1000}},
+			new:             []IPWithTimestamp{{IP: "2.2.2.2", Timestamp: 1015}},
+			observed:        observedTrue("1.1.1.1", "2.2.2.2"),
+			thresholdSec:    30,
+			wantFilteredOld: []string{"1.1.1.1"},
+			wantSuperseded:  nil,
+		},
+		{
+			name: "three-historical-ips-closest-timestamp-selected",
+			old: []IPWithTimestamp{
+				{IP: "1.1.1.1", Timestamp: 900},  // far in the past
+				{IP: "10.0.0.1", Timestamp: 990}, // closest — 10s below new
+				{IP: "172.16.0.1", Timestamp: 950},
+			},
+			new:             []IPWithTimestamp{{IP: "2.2.2.2", Timestamp: 1000}},
+			observed:        observedTrue("2.2.2.2"),
+			thresholdSec:    30,
+			wantFilteredOld: []string{"1.1.1.1", "172.16.0.1"},
+			wantSuperseded:  []string{"10.0.0.1"},
+		},
+		{
+			name:            "threshold-zero-no-replacement",
+			old:             []IPWithTimestamp{{IP: "1.1.1.1", Timestamp: 1000}},
+			new:             []IPWithTimestamp{{IP: "2.2.2.2", Timestamp: 1015}},
+			observed:        observedTrue("2.2.2.2"),
+			thresholdSec:    0,
+			wantFilteredOld: []string{"1.1.1.1"},
+			wantSuperseded:  nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotFiltered, _ := replaceChurnedIPs(tt.old, tt.new, tt.observed, tt.thresholdSec)
+			gotIPs := collectIps(gotFiltered)
+			wantSet := make(map[string]bool, len(tt.wantFilteredOld))
+			for _, ip := range tt.wantFilteredOld {
+				wantSet[ip] = true
+			}
+			for _, ip := range gotIPs {
+				if !wantSet[ip] {
+					t.Errorf("unexpected IP %q in filtered old; want %v", ip, tt.wantFilteredOld)
+				}
+			}
+			if len(gotIPs) != len(tt.wantFilteredOld) {
+				t.Errorf("filtered old count = %d, want %d (got %v, want %v)", len(gotIPs), len(tt.wantFilteredOld), gotIPs, tt.wantFilteredOld)
+			}
+			supersededSet := make(map[string]bool)
+			for _, o := range tt.old {
+				found := false
+				for _, g := range gotFiltered {
+					if g.IP == o.IP {
+						found = true
+						break
+					}
+				}
+				if !found {
+					supersededSet[o.IP] = true
+				}
+			}
+			for _, ip := range tt.wantSuperseded {
+				if !supersededSet[ip] {
+					t.Errorf("expected %q to be superseded but it remained", ip)
+				}
+			}
+		})
+	}
+}
+
 func TestPartitionLiveIps_SingleLiveNotStarvedByStillFreshHistoricals(t *testing.T) {
 	// #4091: db holds A, B, C from minutes ago (still in the 30min
 	// window) but they're not connecting anymore. only D is. old code

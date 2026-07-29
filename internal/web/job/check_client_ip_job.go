@@ -460,13 +460,18 @@ func mergeClientIps(old, new []IPWithTimestamp, staleCutoff int64, newAlwaysLive
 // Live old IPs (seen in the current scan) are never replaced because they
 // represent real, active devices — not CGNAT churn. When thresholdSec is 0
 // the function is a no-op.
+// Among multiple eligible old IPs, the one with the smallest positive
+// timestamp difference is chosen as the replacement candidate, ensuring
+// the closest temporal match is always preferred.
 func replaceChurnedIPs(old []IPWithTimestamp, new []IPWithTimestamp, observedThisScan map[string]bool, thresholdSec int64) ([]IPWithTimestamp, []IPWithTimestamp) {
 	if thresholdSec <= 0 {
 		return old, new
 	}
 	superseded := make(map[string]bool, len(old))
 	for _, n := range new {
-		for _, o := range old {
+		bestIdx := -1
+		bestDiff := thresholdSec + 1
+		for i, o := range old {
 			if o.IP == n.IP || superseded[o.IP] {
 				continue
 			}
@@ -476,10 +481,13 @@ func replaceChurnedIPs(old []IPWithTimestamp, new []IPWithTimestamp, observedThi
 				continue
 			}
 			diff := n.Timestamp - o.Timestamp
-			if diff >= 0 && diff <= thresholdSec {
-				superseded[o.IP] = true
-				break
+			if diff > 0 && diff < bestDiff {
+				bestDiff = diff
+				bestIdx = i
 			}
+		}
+		if bestIdx >= 0 {
+			superseded[old[bestIdx].IP] = true
 		}
 	}
 	filteredOld := make([]IPWithTimestamp, 0, len(old)-len(superseded))
