@@ -42,6 +42,7 @@ var job *CheckClientIpJob
 const defaultXrayAPIPort = 62789
 
 const ipStaleAfterSeconds = int64(30 * 60)
+const ipNewGracePeriodSeconds = int64(2 * 60)
 
 // NewCheckClientIpJob creates a new client IP monitoring job instance.
 func NewCheckClientIpJob() *CheckClientIpJob {
@@ -386,6 +387,7 @@ func (j *CheckClientIpJob) recordLocalAttribution(attribution map[string][]model
 	}
 }
 
+
 // mergeClientIps folds this scan's observations into the persisted set,
 // dropping entries older than staleCutoff. newAlwaysLive exempts the new
 // entries from that cutoff: an API-observed IP is a live connection by
@@ -419,23 +421,51 @@ func selectIpsToBan(live []IPWithTimestamp, limit int) (kept, banned []IPWithTim
 	return live[cutoff:], live[:cutoff]
 }
 
+// An IP is considered live only when it appears in the current
+// online-stats scan. IPs kept in inbound_client_ips but not reported
+// by the current scan are historical records and must not affect IP limit.
 func partitionLiveIps(ipMap map[string]int64, observedThisScan map[string]bool) (live, historical []IPWithTimestamp) {
 	live = make([]IPWithTimestamp, 0, len(observedThisScan))
 	historical = make([]IPWithTimestamp, 0, len(ipMap))
 	now := time.Now().Unix()
 	for ip, ts := range ipMap {
-		entry := IPWithTimestamp{IP: ip, Timestamp: ts}
-		// Consider an IP "live" if it was seen locally in this scan, OR if its
-		// timestamp from the synced database is very recent (e.g. within 2 minutes).
-		// This ensures cluster-wide limits work even if the IP was seen on another node.
-		if observedThisScan[ip] || now-ts < 120 {
+		entry := IPWithTimestamp{
+			IP:        ip,
+			Timestamp: ts,
+		}
+
+		// Only IPs reported by current Xray online-stats scan
+		// are considered active IPs.
+		// Old database entries are kept only as history.
+		if observedThisScan[ip] {
+
+			age := time.Now().Unix() - ts
+
+			// New IP protection:
+			// A recently appeared IP can be caused by mobile network rotation.
+			// Give it a short grace period before counting it as a real device.
+			if age < ipNewGracePeriodSeconds {
+				historical = append(historical, entry)
+				continue
+			}
+
 			live = append(live, entry)
+
 		} else {
+
 			historical = append(historical, entry)
+
 		}
 	}
-	sort.Slice(live, func(i, j int) bool { return live[i].Timestamp < live[j].Timestamp })
-	sort.Slice(historical, func(i, j int) bool { return historical[i].Timestamp < historical[j].Timestamp })
+
+	sort.Slice(live, func(i, j int) bool {
+		return live[i].Timestamp < live[j].Timestamp
+	})
+
+	sort.Slice(historical, func(i, j int) bool {
+		return historical[i].Timestamp < historical[j].Timestamp
+	})
+
 	return live, historical
 }
 
@@ -533,7 +563,7 @@ func (j *CheckClientIpJob) updateInboundClientIps(tx *gorm.DB, inboundClientIps 
 			ipLogger.Printf("[LIMIT_IP] Email = %s || Disconnecting OLD IP = %s || Timestamp = %d", clientEmail, ipTime.IP, ipTime.Timestamp)
 		}
 	}
-
+	
 	// keep kept-live + historical in the blob so the panel keeps showing
 	// recently seen ips. banned live ips are already in the fail2ban log
 	// and will reappear in the next scan if they reconnect.
